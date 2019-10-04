@@ -45,7 +45,7 @@ static bool globox_open_x11(struct globox* globox)
 
 	xcb_create_window(
 		globox->conn,
-		24, // force 24 bits instead of XCB_COPY_FROM_PARENT
+		24, // force 24bpp instead of XCB_COPY_FROM_PARENT
 		globox->win,
 		screen->root,
 		globox->x,
@@ -143,6 +143,9 @@ static bool globox_open_x11(struct globox* globox)
 	uint8_t shared = reply->shared_pixmaps;
 	free(reply);
 
+	// unlike wayland, X can't automatically copy buffers from cpu to gpu
+	// so if the display server is running in DRM we need to do it manually
+	// for this we can use xcb_put_image() to transfer the data over a socket
 	if (shared == 0)
 	{
 		globox->socket = true;
@@ -166,7 +169,7 @@ static bool globox_open_x11(struct globox* globox)
 		globox->rgba = (uint32_t*) globox->shm.shmaddr;
 		globox->comp = (uint8_t*) globox->shm.shmaddr;
 
-		// create pixmap with window depth
+		// disabled because we force 24bpp instead of retrieving the window's depth
 #if 0
 		xcb_get_geometry_cookie_t cookie = xcb_get_geometry(
 			globox->conn,
@@ -176,13 +179,15 @@ static bool globox_open_x11(struct globox* globox)
 			cookie,
 			NULL);
 #endif
+
+		// create pixmap with window depth
 		xcb_shm_create_pixmap(
 			globox->conn,
 			globox->pix,
 			globox->win,
 			globox->width,
 			globox->height,
-			24, // force 24 bits instead of geometry->depth
+			24, // force 24bpp instead of geometry->depth
 			globox->shm.shmseg,
 			0);
 #if 0
