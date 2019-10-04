@@ -26,25 +26,24 @@ enum globox_state
 struct globox
 {
 	enum globox_backend backend;
-	enum globox_state state;
-	char* title;
 	int32_t x;
 	int32_t y;
 	uint32_t width;
 	uint32_t height;
-
 	uint32_t* rgba;
-	uint8_t* comp;
+
+	char* title;
+	enum globox_state state;
 
 #ifdef GLOBOX_X11
-	xcb_connection_t* conn;
-	xcb_window_t win;
-	int screen;
+	xcb_connection_t* x11_conn;
+	xcb_window_t x11_win;
+	int x11_screen;
 
-	xcb_shm_segment_info_t shm;
-	xcb_gcontext_t gfx;
-	xcb_pixmap_t pix;
-	bool socket;
+	xcb_shm_segment_info_t x11_shm;
+	xcb_gcontext_t x11_gfx;
+	xcb_pixmap_t x11_pix;
+	bool x11_socket;
 #endif
 };
 
@@ -59,14 +58,6 @@ bool globox_open(
 
 void globox_close(struct globox* globox);
 
-bool globox_change_title(
-	struct globox* globox,
-	char* title);
-
-bool globox_change_state(
-	struct globox* globox,
-	enum globox_state state);
-
 void globox_commit(
 	struct globox* globox,
 	int32_t x,
@@ -75,5 +66,13 @@ void globox_commit(
 	uint32_t height);
 
 void globox_refresh(struct globox* globox);
+
+bool globox_change_title(
+	struct globox* globox,
+	char* title);
+
+bool globox_change_state(
+	struct globox* globox,
+	enum globox_state state);
 
 #endif

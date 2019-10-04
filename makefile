@@ -3,9 +3,10 @@ CC = gcc
 FLAGS = -std=c99 -pedantic -g
 FLAGS+= -Wall -Wno-unused-parameter -Wextra -Werror=vla -Werror
 FLAGS+= -DGLOBOX_X11
+FLAGS+= -DGLOBOX_WAYLAND
 VALGRIND = --show-leak-kinds=all --track-origins=yes --leak-check=full
-#LINK = -lwayland-client
 LINK = -lxcb -lxcb-shm
+LINK+= -lwayland-client -lrt
 CMD = ./$(NAME)
 
 BIND = bin
@@ -19,14 +20,15 @@ INCL+= -I$(INCD)
 
 SRCS = $(SRCD)/main.c
 SRCS+= $(SRCD)/globox.c
-#SRCS+= $(INCD)/xdg-shell-protocol.c
+SRCS+= $(SRCD)/globox_x11.c
+SRCS+= $(SRCD)/globox_wayland.c
+SRCS+= $(INCD)/xdg-shell-protocol.c
 
 SRCS_OBJS := $(patsubst %.c,$(OBJD)/%.o,$(SRCS))
 
 # aliases
 .PHONY: final
-final: $(BIND)/$(NAME)
-#final: $(INCD) $(BIND)/$(NAME)
+final: $(INCD) $(BIND)/$(NAME)
 
 $(INCD):
 	@echo "generating wayland protocol extensions source files"
