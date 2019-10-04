@@ -6,6 +6,8 @@
 
 #ifdef GLOBOX_X11
 #include <xcb/xcb.h>
+#include <xcb/shm.h>
+#include <xcb/xcb_image.h>
 #endif
 
 enum globox_backend
@@ -31,12 +33,18 @@ struct globox
 	uint32_t width;
 	uint32_t height;
 
-	uint8_t* rgba;
+	uint32_t* rgba;
+	uint8_t* comp;
 
 #ifdef GLOBOX_X11
-	xcb_connection_t* server_conn;
-	xcb_window_t window_id;
-	int preferred_screen;
+	xcb_connection_t* conn;
+	xcb_window_t win;
+	int screen;
+
+	xcb_shm_segment_info_t shm;
+	xcb_gcontext_t gfx;
+	xcb_pixmap_t pix;
+	bool socket;
 #endif
 };
 
@@ -58,5 +66,7 @@ bool globox_change_title(
 bool globox_change_state(
 	struct globox* globox,
 	enum globox_state state);
+
+void globox_commit(struct globox* globox);
 
 #endif

@@ -5,7 +5,7 @@ FLAGS+= -Wall -Wno-unused-parameter -Wextra -Werror=vla -Werror
 FLAGS+= -DGLOBOX_X11
 VALGRIND = --show-leak-kinds=all --track-origins=yes --leak-check=full
 #LINK = -lwayland-client
-LINK = -lxcb
+LINK = -lxcb -lxcb-shm
 CMD = ./$(NAME)
 
 BIND = bin

@@ -1,11 +1,14 @@
+#define _XOPEN_SOURCE 500
+
 #include "globox.h"
-#include "unistd.h"
+#include <unistd.h>
+#include <stdio.h>
 
 int main()
 {
 	struct globox ctx;
 
-	globox_open(
+	bool ok = globox_open(
 		&ctx,
 		GLOBOX_STATE_REGULAR,
 		"test",
@@ -14,9 +17,23 @@ int main()
 		100,
 		100);
 
-	sleep(10);
+	printf("%s\n", ok ? "ok" : "oops");
 
-	globox_close(&ctx);
+	if (ok)
+	{
+#if 0
+		for (int i = 0; i < (100 * 100); ++i)
+		{
+			usleep(100);
+			ctx.rgba[i] = 0xFFFFFFFF;
+			globox_commit(&ctx);
+		}
+#endif
+
+		sleep(10);
+
+		globox_close(&ctx);
+	}
 
 	return 0;
 }
