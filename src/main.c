@@ -17,20 +17,16 @@ int main()
 		100,
 		100);
 
-	printf("%s\n", ok ? "ok" : "oops");
-
 	if (ok)
 	{
-#if 0
 		for (int i = 0; i < (100 * 100); ++i)
 		{
-			usleep(100);
-			ctx.rgba[i] = 0xFFFFFFFF;
+			usleep(1000);
+			ctx.rgba[i] = 0xFFFFFF;
 			globox_commit(&ctx);
 		}
-#endif
 
-		sleep(10);
+		sleep(5);
 
 		globox_close(&ctx);
 	}

@@ -145,10 +145,30 @@ static bool globox_open_x11(struct globox* globox)
 
 	// unlike wayland, X can't automatically copy buffers from cpu to gpu
 	// so if the display server is running in DRM we need to do it manually
-	// for this we can use xcb_put_image() to transfer the data over a socket
+	// for this we can use xcb_put_image() to transfer the data using a socket
 	if (shared == 0)
 	{
+		// transfer the data using a socket
 		globox->socket = true;
+		// I have some bad news
+		globox->rgba = (uint32_t*) malloc(4 * globox->width * globox->height);
+		globox->comp = (uint8_t*) globox->rgba;
+
+		if (globox->rgba == NULL)
+		{
+			return false;
+		}
+
+		// create the pixmap
+		globox->pix = xcb_generate_id(globox->conn);
+
+		xcb_create_pixmap(
+			globox->conn,
+			24, // force 24bpp instead of geometry->depth
+			globox->pix,
+			globox->win,
+			globox->width,
+			globox->height);
 	}
 	else
 	{
@@ -269,6 +289,7 @@ void globox_close(struct globox* globox)
 	{
 		if (globox->socket)
 		{
+			free(globox->rgba);
 		}
 		else
 		{
@@ -306,6 +327,23 @@ bool globox_change_state(
 void globox_commit(struct globox* globox)
 {
 #ifdef GLOBOX_X11
+	if (globox->socket)
+	{
+		xcb_put_image(
+			globox->conn,
+			XCB_IMAGE_FORMAT_Z_PIXMAP,
+			globox->pix,
+			globox->gfx,
+			globox->width,
+			globox->height,
+			0,
+			0,
+			0,
+			24,
+			4 * globox->width * globox->height,
+			(void*) globox->rgba);
+	}
+
 	xcb_copy_area(
 		globox->conn,
 		globox->pix,
