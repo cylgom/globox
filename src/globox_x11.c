@@ -11,14 +11,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-bool globox_open_x11(struct globox* globox)
+static inline xcb_screen_t* get_screen(struct globox* globox)
 {
-	uint32_t values[2];
-
-	// connect to server
-	globox->x11_conn = xcb_connect(NULL, &(globox->x11_screen));
-
-	// get screen pointer corresponding to preferred screen number
 	const xcb_setup_t* setup = xcb_get_setup(globox->x11_conn);
 	xcb_screen_iterator_t iter = xcb_setup_roots_iterator(setup);
 
@@ -28,15 +22,20 @@ bool globox_open_x11(struct globox* globox)
 		xcb_screen_next(&iter);
 	}
 
-	xcb_screen_t* screen = iter.data;
+	return iter.data;
+}
 
-	// get a free window id
+static inline void create_window(struct globox* globox, xcb_screen_t* screen)
+{
+	uint32_t values[2] =
+	{
+		screen->black_pixel,
+		XCB_EVENT_MASK_EXPOSURE,
+	};
+
 	globox->x11_win = xcb_generate_id(globox->x11_conn);
 
-	// create a window and attach it to this id
 	xcb_visualid_t root_visual = screen->root_visual;
-	values[0] = screen->black_pixel;
-	values[1] = XCB_EVENT_MASK_EXPOSURE;
 
 	xcb_create_window(
 		globox->x11_conn,
@@ -52,12 +51,17 @@ bool globox_open_x11(struct globox* globox)
 		root_visual,
 		XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,
 		values);
+}
 
-	// create a minimal graphic context
+static inline void create_gfx(struct globox* globox, xcb_screen_t* screen)
+{
+	uint32_t values[2] =
+	{
+		screen->black_pixel,
+		0,
+	};
+
 	globox->x11_gfx = xcb_generate_id(globox->x11_conn);
-
-	values[0] = screen->black_pixel;
-	values[1] = 0;
 
 	xcb_create_gc(
 		globox->x11_conn,
@@ -65,29 +69,12 @@ bool globox_open_x11(struct globox* globox)
 		globox->x11_win,
 		XCB_GC_FOREGROUND | XCB_GC_GRAPHICS_EXPOSURES,
 		values);
+}
 
-	// map the window
-	xcb_map_window(globox->x11_conn, globox->x11_win);
-
-	// operations have no effect when the context is in failure state
-	// so we can check it after going through the whole process
-	if (xcb_connection_has_error(globox->x11_conn) > 0)
-	{
-		return false;
-	}
-
-	// commit operations
-	int ret = xcb_flush(globox->x11_conn);
-
-	// this probably doesn't count as a failure so we check it after
-	// all the rest and abort if it didn't succeed
-	if (ret <= 0)
-	{
-		return false;
-	}
-
-	// check if visual type is supported
+static inline bool visual_compatible(struct globox* globox, xcb_screen_t* screen)
+{
 	xcb_visualtype_t* visual = NULL;
+	xcb_visualid_t root_visual = screen->root_visual;
 	xcb_depth_iterator_t depth_iter = xcb_screen_allowed_depths_iterator(screen);
 	xcb_visualtype_iterator_t visual_iter;
 
@@ -115,11 +102,104 @@ bool globox_open_x11(struct globox* globox)
 			}
 			else
 			{
-				break;
+				return true;
 			}
 		}
 
 		xcb_depth_next(&depth_iter);
+	}
+
+	return false;
+}
+
+static inline bool buffer_socket(struct globox* globox)
+{
+	// transfer the data using a socket
+	globox->x11_socket = true;
+	// I have some bad news
+	globox->rgba = (uint32_t*) malloc(4 * globox->width * globox->height);
+
+	if (globox->rgba == NULL)
+	{
+		return false;
+	}
+
+	// create the pixmap
+	globox->x11_pix = xcb_generate_id(globox->x11_conn);
+
+	xcb_create_pixmap(
+		globox->x11_conn,
+		24, // force 24bpp instead of geometry->depth
+		globox->x11_pix,
+		globox->x11_win,
+		globox->width,
+		globox->height);
+
+	return true;
+}
+
+static inline void buffer_shm(struct globox* globox)
+{
+	// create the shared memory buffer
+	globox->x11_socket = false;
+	globox->x11_shm.shmid = shmget(
+		IPC_PRIVATE,
+		globox->width * globox->height * 4,
+		IPC_CREAT | 0600);
+	globox->x11_shm.shmaddr = shmat(globox->x11_shm.shmid, 0, 0);
+	globox->x11_shm.shmseg = xcb_generate_id(globox->x11_conn);
+	xcb_shm_attach(globox->x11_conn, globox->x11_shm.shmseg, globox->x11_shm.shmid, 0);
+
+	globox->x11_pix = xcb_generate_id(globox->x11_conn);
+
+	shmctl(globox->x11_shm.shmid, IPC_RMID, 0);
+
+	globox->rgba = (uint32_t*) globox->x11_shm.shmaddr;
+
+	// create pixmap with window depth
+	xcb_shm_create_pixmap(
+		globox->x11_conn,
+		globox->x11_pix,
+		globox->x11_win,
+		globox->width,
+		globox->height,
+		24, // force 24bpp instead of geometry->depth
+		globox->x11_shm.shmseg,
+		0);
+}
+
+bool globox_open_x11(struct globox* globox)
+{
+	// connect to server
+	globox->x11_conn = xcb_connect(NULL, &(globox->x11_screen));
+	xcb_screen_t* screen = get_screen(globox);
+
+	// create the window
+	create_window(globox, screen);
+	create_gfx(globox, screen);
+	xcb_map_window(globox->x11_conn, globox->x11_win);
+
+	// operations have no effect when the context is in failure state
+	// so we can check it after going through the whole process
+	if (xcb_connection_has_error(globox->x11_conn) > 0)
+	{
+		return false;
+	}
+
+	// commit operations
+	int ret = xcb_flush(globox->x11_conn);
+
+	// this probably doesn't count as a failure so we check it after
+	// all the rest and abort if it didn't succeed
+	if (ret <= 0)
+	{
+		return false;
+	}
+
+	// check display server settings compatibility
+	if (!visual_compatible(globox, screen))
+	{
+		return false;
 	}
 
 	// we are not done yet as we wish to bypass the xcb drawing API to
@@ -143,62 +223,23 @@ bool globox_open_x11(struct globox* globox)
 	// for this we can use xcb_put_image() to transfer the data using a socket
 	if (shared == 0)
 	{
-		// transfer the data using a socket
-		globox->x11_socket = true;
-		// I have some bad news
-		globox->rgba = (uint32_t*) malloc(4 * globox->width * globox->height);
-
-		if (globox->rgba == NULL)
+		if (!buffer_socket(globox))
 		{
 			return false;
 		}
-
-		// create the pixmap
-		globox->x11_pix = xcb_generate_id(globox->x11_conn);
-
-		xcb_create_pixmap(
-			globox->x11_conn,
-			24, // force 24bpp instead of geometry->depth
-			globox->x11_pix,
-			globox->x11_win,
-			globox->width,
-			globox->height);
 	}
 	else
 	{
-		// create the shared memory buffer
-		globox->x11_socket = false;
-		globox->x11_shm.shmid = shmget(
-			IPC_PRIVATE,
-			globox->width * globox->height * 4,
-			IPC_CREAT | 0600);
-		globox->x11_shm.shmaddr = shmat(globox->x11_shm.shmid, 0, 0);
-		globox->x11_shm.shmseg = xcb_generate_id(globox->x11_conn);
-		xcb_shm_attach(globox->x11_conn, globox->x11_shm.shmseg, globox->x11_shm.shmid, 0);
-
-		globox->x11_pix = xcb_generate_id(globox->x11_conn);
-
-		shmctl(globox->x11_shm.shmid, IPC_RMID, 0);
-
-		globox->rgba = (uint32_t*) globox->x11_shm.shmaddr;
-
-		// create pixmap with window depth
-		xcb_shm_create_pixmap(
-			globox->x11_conn,
-			globox->x11_pix,
-			globox->x11_win,
-			globox->width,
-			globox->height,
-			24, // force 24bpp instead of geometry->depth
-			globox->x11_shm.shmseg,
-			0);
+		buffer_shm(globox);
 	}
 
+	// still time to abort if buffer allocation operations fucked the server
 	if (xcb_connection_has_error(globox->x11_conn) > 0)
 	{
 		return false;
 	}
 
+	// otherwise we confirm the X11 client successfully initialized
 	globox->backend = GLOBOX_BACKEND_X11;
 
 	return true;

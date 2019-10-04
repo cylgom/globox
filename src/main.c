@@ -26,7 +26,7 @@ int main()
 			globox_commit(&ctx, 10, 10, 80, 80);
 		}
 
-		sleep(5);
+		sleep(2);
 
 		globox_close(&ctx);
 	}
