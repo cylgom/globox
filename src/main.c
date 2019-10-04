@@ -23,7 +23,7 @@ int main()
 		{
 			usleep(1000);
 			ctx.rgba[i] = 0xFFFFFF;
-			globox_commit(&ctx);
+			globox_commit(&ctx, 10, 10, 80, 80);
 		}
 
 		sleep(5);

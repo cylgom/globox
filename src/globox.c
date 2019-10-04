@@ -324,24 +324,61 @@ bool globox_change_state(
 	return ok;
 }
 
-void globox_commit(struct globox* globox)
+void globox_commit(
+	struct globox* globox,
+	int32_t x,
+	int32_t y,
+	uint32_t width,
+	uint32_t height)
 {
 #ifdef GLOBOX_X11
 	if (globox->socket)
 	{
+		size_t len = sizeof (xcb_get_image_request_t);
+		size_t len_theoric = (len + (4 * globox->width * globox->height)) >> 2;
+		uint64_t len_max = xcb_get_maximum_request_length(globox->conn);
+
+		int32_t y2 = y;
+		uint32_t height2 = height;
+
+		if (len_theoric >= len_max)
+		{
+			uint64_t rows_batch = ((len_max << 2) - len) / (4 * globox->width);
+
+			while (rows_batch <= height2)
+			{
+				xcb_put_image(
+					globox->conn,
+					XCB_IMAGE_FORMAT_Z_PIXMAP,
+					globox->pix,
+					globox->gfx,
+					width,
+					height2,
+					x,
+					y2,
+					0,
+					24,
+					4 * width * height2,
+					(void*) (globox->rgba + x + (y2 * globox->width)));
+
+				y2 += rows_batch;
+				height2 -= rows_batch;
+			}
+		}
+
 		xcb_put_image(
 			globox->conn,
 			XCB_IMAGE_FORMAT_Z_PIXMAP,
 			globox->pix,
 			globox->gfx,
-			globox->width,
-			globox->height,
-			0,
-			0,
+			width,
+			height2,
+			x,
+			y2,
 			0,
 			24,
-			4 * globox->width * globox->height,
-			(void*) globox->rgba);
+			4 * width * height2,
+			(void*) (globox->rgba + x + (y2 * globox->width)));
 	}
 
 	xcb_copy_area(
@@ -349,13 +386,23 @@ void globox_commit(struct globox* globox)
 		globox->pix,
 		globox->win,
 		globox->gfx,
-		0,
-		0,
+		x,
+		y,
+		x,
+		y,
+		width,
+		height);
+
+	xcb_flush(globox->conn);
+#endif
+}
+
+void globox_refresh(struct globox* globox)
+{
+	globox_commit(
+		globox,
 		0,
 		0,
 		globox->width,
 		globox->height);
-
-	xcb_flush(globox->conn);
-#endif
 }

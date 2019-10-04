@@ -67,6 +67,13 @@ bool globox_change_state(
 	struct globox* globox,
 	enum globox_state state);
 
-void globox_commit(struct globox* globox);
+void globox_commit(
+	struct globox* globox,
+	int32_t x,
+	int32_t y,
+	uint32_t width,
+	uint32_t height);
+
+void globox_refresh(struct globox* globox);
 
 #endif
