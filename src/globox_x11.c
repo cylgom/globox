@@ -12,6 +12,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+enum x11_atom_types
+{
+	ATOM_STATE_MAXIMIZED_HORZ = 0,
+	ATOM_STATE_MAXIMIZED_VERT,
+	ATOM_STATE_FULLSCREEN,
+	ATOM_STATE,
+	ATOM_ICON,
+};
+
 static inline xcb_screen_t* get_screen(struct globox* globox)
 {
 	const xcb_setup_t* setup = xcb_get_setup(globox->x11_conn);
@@ -174,15 +183,16 @@ static inline bool init_atoms(struct globox* globox)
 	xcb_intern_atom_cookie_t cookie;
 	xcb_intern_atom_reply_t* reply;
 	xcb_generic_error_t* error;
-	char* atoms_names[4] =
+	char* atoms_names[5] =
 	{
 		"_NET_WM_STATE_MAXIMIZED_HORZ",
 		"_NET_WM_STATE_MAXIMIZED_VERT",
 		"_NET_WM_STATE_FULLSCREEN",
 		"_NET_WM_STATE",
+		"_NET_WM_ICON",
 	};
 
-	for(uint8_t i = 0; i < 4; ++i)
+	for(uint8_t i = 0; i < 5; ++i)
 	{
 		cookie = xcb_intern_atom(
 			globox->x11_conn,
@@ -408,7 +418,7 @@ static inline void set_state(
 	xcb_client_message_event_t ev;
 
 	ev.response_type = XCB_CLIENT_MESSAGE;
-	ev.type = globox->x11_atoms[3];
+	ev.type = globox->x11_atoms[ATOM_STATE];
 	ev.format = 32;
 	ev.window = globox->x11_win;
 	ev.data.data32[0] = action;
@@ -431,25 +441,25 @@ void globox_set_state_x11(struct globox* globox, enum globox_state state)
 	{
 		case GLOBOX_STATE_REGULAR:
 		{
-			set_state(globox, globox->x11_atoms[2], 0);
-			set_state(globox, globox->x11_atoms[0], 0);
-			set_state(globox, globox->x11_atoms[1], 0);
+			set_state(globox, globox->x11_atoms[ATOM_STATE_FULLSCREEN], 0);
+			set_state(globox, globox->x11_atoms[ATOM_STATE_MAXIMIZED_HORZ], 0);
+			set_state(globox, globox->x11_atoms[ATOM_STATE_MAXIMIZED_VERT], 0);
 
 			break;
 		}
 		case GLOBOX_STATE_MAXIMIZED:
 		{
-			set_state(globox, globox->x11_atoms[2], 0);
-			set_state(globox, globox->x11_atoms[0], 1);
-			set_state(globox, globox->x11_atoms[1], 1);
+			set_state(globox, globox->x11_atoms[ATOM_STATE_FULLSCREEN], 0);
+			set_state(globox, globox->x11_atoms[ATOM_STATE_MAXIMIZED_HORZ], 1);
+			set_state(globox, globox->x11_atoms[ATOM_STATE_MAXIMIZED_VERT], 1);
 
 			break;
 		}
 		case GLOBOX_STATE_FULLSCREEN:
 		{
-			set_state(globox, globox->x11_atoms[0], 0);
-			set_state(globox, globox->x11_atoms[1], 0);
-			set_state(globox, globox->x11_atoms[2], 1);
+			set_state(globox, globox->x11_atoms[ATOM_STATE_MAXIMIZED_HORZ], 0);
+			set_state(globox, globox->x11_atoms[ATOM_STATE_MAXIMIZED_VERT], 0);
+			set_state(globox, globox->x11_atoms[ATOM_STATE_FULLSCREEN], 1);
 
 			break;
 		}
@@ -492,6 +502,21 @@ void globox_set_visible_x11(struct globox* globox, bool visible)
 	}
 
 	globox->x11_visible = visible;
+}
+
+void globox_set_icon_x11(struct globox* globox, uint64_t* pixmap, uint32_t len)
+{
+	xcb_change_property(
+		globox->x11_conn,
+		XCB_PROP_MODE_REPLACE,
+		globox->x11_win,
+		globox->x11_atoms[ATOM_ICON],
+		XCB_ATOM_CARDINAL,
+		32,
+		len * 8,
+		pixmap);
+
+	xcb_flush(globox->x11_conn);
 }
 
 #endif

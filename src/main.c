@@ -21,11 +21,12 @@ int main()
 		100,
 		100);
 
-	printf("%d\n", (&iconpix_beg)[3]);
-
 	if (ok)
 	{
 		globox_set_title(&ctx, "HELO");
+		printf("%lu\n", ((uint64_t*) &iconpix_beg)[258]);
+		printf("%lu\n", ((uint64_t*) &iconpix_beg)[259]);
+		globox_set_icon(&ctx, (uint64_t*) &iconpix_beg);
 		sleep(1);
 		globox_set_visible(&ctx, false);
 		globox_commit(&ctx);

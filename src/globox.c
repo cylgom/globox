@@ -156,3 +156,13 @@ void globox_set_visible(struct globox* globox, bool visible)
 	}
 #endif
 }
+
+void globox_set_icon(struct globox* globox, uint64_t* rgba)
+{
+#ifdef GLOBOX_X11
+	if (globox->backend == GLOBOX_BACKEND_X11)
+	{
+		globox_set_icon_x11(globox, rgba, 2 + (16 * 16) + 2 + (32 * 32));
+	}
+#endif
+}
