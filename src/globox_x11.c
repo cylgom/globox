@@ -10,6 +10,7 @@
 #include <xcb/shm.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 static inline xcb_screen_t* get_screen(struct globox* globox)
 {
@@ -178,6 +179,7 @@ bool globox_open_x11(struct globox* globox)
 	create_window(globox, screen);
 	create_gfx(globox, screen);
 	xcb_map_window(globox->x11_conn, globox->x11_win);
+	globox->x11_visible = true;
 
 	// operations have no effect when the context is in failure state
 	// so we can check it after going through the whole process
@@ -262,7 +264,12 @@ void globox_close_x11(struct globox* globox)
 	xcb_disconnect(globox->x11_conn);
 }
 
-void globox_commit_x11(
+void globox_commit_x11(struct globox* globox)
+{
+	xcb_flush(globox->x11_conn);
+}
+
+void globox_copy_x11(
 	struct globox* globox,
 	int32_t x,
 	int32_t y,
@@ -329,8 +336,55 @@ void globox_commit_x11(
 		y,
 		width,
 		height);
+}
 
-	xcb_flush(globox->x11_conn);
+void globox_set_title_x11(struct globox* globox, const char* title)
+{
+	xcb_change_property(
+		globox->x11_conn,
+		XCB_PROP_MODE_REPLACE,
+		globox->x11_win,
+		XCB_ATOM_WM_NAME,
+		XCB_ATOM_STRING,
+		8,
+		strlen(title),
+		title);
+}
+
+void globox_set_pos_x11(struct globox* globox, uint32_t x, uint32_t y)
+{
+	uint32_t values[2] = {x, y};
+
+	xcb_configure_window(
+		globox->x11_conn,
+		globox->x11_win,
+		XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y,
+		values);
+}
+
+void globox_set_size_x11(struct globox* globox, uint32_t width, uint32_t height)
+{
+	uint32_t values[2] = {width, height};
+
+	xcb_configure_window(
+		globox->x11_conn,
+		globox->x11_win,
+		XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
+		values);
+}
+
+void globox_set_visible_x11(struct globox* globox, bool visible)
+{
+	if (globox->x11_visible && !visible)
+	{
+		xcb_unmap_window(globox->x11_conn, globox->x11_win);
+	}
+	else if (!(globox->x11_visible) && visible)
+	{
+		xcb_map_window(globox->x11_conn, globox->x11_win);
+	}
+
+	globox->x11_visible = visible;
 }
 
 #endif

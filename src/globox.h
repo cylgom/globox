@@ -10,6 +10,7 @@
 #include <xcb/xcb_image.h>
 #endif
 
+// structures
 enum globox_backend
 {
 	GLOBOX_BACKEND_WAYLAND,
@@ -44,9 +45,11 @@ struct globox
 	xcb_gcontext_t x11_gfx;
 	xcb_pixmap_t x11_pix;
 	bool x11_socket;
+	bool x11_visible;
 #endif
 };
 
+// main window operations
 bool globox_open(
 	struct globox* globox,
 	enum globox_state state,
@@ -58,21 +61,27 @@ bool globox_open(
 
 void globox_close(struct globox* globox);
 
-void globox_commit(
+void globox_commit(struct globox* globox);
+
+void globox_copy(
 	struct globox* globox,
 	int32_t x,
 	int32_t y,
 	uint32_t width,
 	uint32_t height);
 
-void globox_refresh(struct globox* globox);
+// setters
+void globox_set_title(struct globox* globox, char* title);
+void globox_set_state(struct globox* globox, enum globox_state state);
+void globox_set_pos(struct globox* globox, uint32_t x, uint32_t y);
+void globox_set_size(struct globox* globox, uint32_t width, uint32_t height);
+void globox_set_visible(struct globox* globox, bool visible);
 
-bool globox_change_title(
-	struct globox* globox,
-	char* title);
-
-bool globox_change_state(
-	struct globox* globox,
-	enum globox_state state);
+// getters
+char* globox_get_title(struct globox* globox);
+enum globox_state globox_get_state(struct globox* globox);
+void globox_get_pos(struct globox* globox, int32_t* x, int32_t* y);
+void globox_get_size(struct globox* globox, uint32_t* width, uint32_t* height);
+bool globox_get_visible(struct globox* globox);
 
 #endif

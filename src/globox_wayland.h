@@ -7,7 +7,7 @@
 
 bool globox_open_wayland(struct globox* globox);
 void globox_close_wayland(struct globox* globox);
-void globox_commit_wayland(
+void globox_copy_wayland(
 	struct globox* globox,
 	int32_t x,
 	int32_t y,
