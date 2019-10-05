@@ -4,6 +4,10 @@
 #include <unistd.h>
 #include <stdio.h>
 
+extern unsigned char iconpix_beg;
+extern unsigned char iconpix_end;
+extern unsigned char iconpix_len;
+
 int main()
 {
 	struct globox ctx;
@@ -16,6 +20,8 @@ int main()
 		0,
 		100,
 		100);
+
+	printf("%d\n", (&iconpix_beg)[3]);
 
 	if (ok)
 	{

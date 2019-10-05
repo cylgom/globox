@@ -14,6 +14,7 @@ OBJD = obj
 SRCD = src
 INCD = inc
 SUBD = sub
+RESD = res
 
 INCL = -I$(SRCD)
 INCL+= -I$(INCD)
@@ -25,6 +26,7 @@ SRCS+= $(SRCD)/globox_wayland.c
 SRCS+= $(INCD)/xdg-shell-protocol.c
 
 SRCS_OBJS := $(patsubst %.c,$(OBJD)/%.o,$(SRCS))
+SRCS_OBJS += $(OBJD)/$(RESD)/iconpix.o
 
 # aliases
 .PHONY: final
@@ -39,6 +41,18 @@ $(INCD):
 	@wayland-scanner client-header \
 	< /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml \
 	> $@/xdg-shell-client-protocol.h
+
+$(RESD)/iconpix.bin:
+	@echo "generating icons pixmap"
+	@cd $(RESD) && ./makepix.sh
+
+$(OBJD)/$(RESD)/iconpix.o: $(RESD)/iconpix.bin
+	@echo "building icon object"
+	@mkdir -p $(@D)
+	@objcopy -I binary -O elf64-x86-64 -B i386:x86-64 \
+	--redefine-syms=$(RESD)/syms.map \
+	--rename-section .data=.iconpix \
+	$< $@
 
 # generic compiling command
 $(OBJD)/%.o: %.c
