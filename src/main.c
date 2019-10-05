@@ -35,6 +35,23 @@ int main()
 			globox_commit(&ctx);
 		}
 
+		sleep(1);
+
+		globox_set_state(&ctx, GLOBOX_STATE_MAXIMIZED);
+		globox_commit(&ctx);
+
+		sleep(2);
+
+		globox_set_state(&ctx, GLOBOX_STATE_FULLSCREEN);
+		globox_commit(&ctx);
+
+		sleep(2);
+
+		globox_set_state(&ctx, GLOBOX_STATE_REGULAR);
+		globox_commit(&ctx);
+
+		sleep(1);
+
 		uint32_t x = 0;
 		uint32_t y = 0;
 

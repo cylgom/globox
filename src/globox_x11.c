@@ -8,6 +8,7 @@
 
 #include <xcb/xcb.h>
 #include <xcb/shm.h>
+#include <xcb/xcb_ewmh.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -169,10 +170,73 @@ static inline void buffer_shm(struct globox* globox)
 		0);
 }
 
+#ifdef GLOBOX_EWMH
+static inline bool init_ewmh(struct globox* globox)
+{
+	xcb_intern_atom_cookie_t* init = xcb_ewmh_init_atoms(
+		globox->x11_conn,
+		&(globox->ewmh_conn));
+
+	uint8_t ret = xcb_ewmh_init_atoms_replies(
+		&(globox->ewmh_conn),
+		init,
+		NULL);
+
+	if (ret != 1)
+	{
+		return false;
+	}
+
+	xcb_intern_atom_cookie_t cookie;
+	xcb_intern_atom_reply_t* reply;
+	xcb_generic_error_t* error;
+	char* atoms_names[3] =
+	{
+		"_NET_WM_STATE_MAXIMIZED_HORZ",
+		"_NET_WM_STATE_MAXIMIZED_VERT",
+		"_NET_WM_STATE_FULLSCREEN",
+	};
+
+	for(uint8_t i = 0; i < 3; ++i)
+	{
+		cookie = xcb_intern_atom(
+			globox->x11_conn,
+			0,
+			strlen(atoms_names[i]),
+			atoms_names[i]);
+
+		reply = xcb_intern_atom_reply(
+			globox->x11_conn,
+			cookie,
+			&error);
+
+		if (error != NULL)
+		{
+			return false;
+		}
+
+		globox->ewmh_atoms[i] = reply->atom;
+
+		free(reply);
+	}
+
+	return true;
+}
+#endif
+
 bool globox_open_x11(struct globox* globox)
 {
 	// connect to server
 	globox->x11_conn = xcb_connect(NULL, &(globox->x11_screen));
+
+	// provide ewmh-dependant functions
+#ifdef GLOBOX_EWMH
+	if (!init_ewmh(globox))
+	{
+		return false;
+	}
+#endif
+
 	xcb_screen_t* screen = get_screen(globox);
 
 	// create the window
@@ -349,6 +413,58 @@ void globox_set_title_x11(struct globox* globox, const char* title)
 		8,
 		strlen(title),
 		title);
+}
+
+#ifdef GLOBOX_EWMH
+static inline void set_state(
+	struct globox* globox,
+	xcb_atom_t atom,
+	xcb_ewmh_wm_state_action_t action)
+{
+	xcb_ewmh_request_change_wm_state(
+		&(globox->ewmh_conn),
+		globox->x11_screen,
+		globox->x11_win,
+		action,
+		globox->ewmh_conn._NET_WM_STATE,
+		atom,
+		XCB_EWMH_CLIENT_SOURCE_TYPE_NORMAL);
+}
+#endif
+
+void globox_set_state_x11(struct globox* globox, enum globox_state state)
+{
+#ifdef GLOBOX_EWMH
+	switch (state)
+	{
+		case GLOBOX_STATE_REGULAR:
+		{
+			set_state(globox, globox->ewmh_atoms[2], XCB_EWMH_WM_STATE_REMOVE);
+			set_state(globox, globox->ewmh_atoms[0], XCB_EWMH_WM_STATE_REMOVE);
+			set_state(globox, globox->ewmh_atoms[1], XCB_EWMH_WM_STATE_REMOVE);
+
+			break;
+		}
+		case GLOBOX_STATE_MAXIMIZED:
+		{
+			set_state(globox, globox->ewmh_atoms[2], XCB_EWMH_WM_STATE_REMOVE);
+			set_state(globox, globox->ewmh_atoms[0], XCB_EWMH_WM_STATE_ADD);
+			set_state(globox, globox->ewmh_atoms[1], XCB_EWMH_WM_STATE_ADD);
+
+			break;
+		}
+		case GLOBOX_STATE_FULLSCREEN:
+		{
+			set_state(globox, globox->ewmh_atoms[0], XCB_EWMH_WM_STATE_REMOVE);
+			set_state(globox, globox->ewmh_atoms[1], XCB_EWMH_WM_STATE_REMOVE);
+			set_state(globox, globox->ewmh_atoms[2], XCB_EWMH_WM_STATE_ADD);
+
+			break;
+		}
+	}
+#endif
+
+	globox->state = state;
 }
 
 void globox_set_pos_x11(struct globox* globox, uint32_t x, uint32_t y)

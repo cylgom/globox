@@ -122,6 +122,7 @@ void globox_set_state(struct globox* globox, enum globox_state state)
 #ifdef GLOBOX_X11
 	if (globox->backend == GLOBOX_BACKEND_X11)
 	{
+		globox_set_state_x11(globox, state);
 	}
 #endif
 }

@@ -8,6 +8,10 @@
 #include <xcb/xcb.h>
 #include <xcb/shm.h>
 #include <xcb/xcb_image.h>
+
+#ifdef GLOBOX_EWMH
+#include <xcb/xcb_ewmh.h>
+#endif
 #endif
 
 // structures
@@ -46,6 +50,11 @@ struct globox
 	xcb_pixmap_t x11_pix;
 	bool x11_socket;
 	bool x11_visible;
+
+#ifdef GLOBOX_EWMH
+	xcb_ewmh_connection_t ewmh_conn;
+	xcb_atom_t ewmh_atoms[3];
+#endif
 #endif
 };
 
