@@ -8,7 +8,6 @@
 
 #include <xcb/xcb.h>
 #include <xcb/shm.h>
-#include <xcb/xcb_ewmh.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -170,34 +169,20 @@ static inline void buffer_shm(struct globox* globox)
 		0);
 }
 
-#ifdef GLOBOX_EWMH
-static inline bool init_ewmh(struct globox* globox)
+static inline bool init_atoms(struct globox* globox)
 {
-	xcb_intern_atom_cookie_t* init = xcb_ewmh_init_atoms(
-		globox->x11_conn,
-		&(globox->ewmh_conn));
-
-	uint8_t ret = xcb_ewmh_init_atoms_replies(
-		&(globox->ewmh_conn),
-		init,
-		NULL);
-
-	if (ret != 1)
-	{
-		return false;
-	}
-
 	xcb_intern_atom_cookie_t cookie;
 	xcb_intern_atom_reply_t* reply;
 	xcb_generic_error_t* error;
-	char* atoms_names[3] =
+	char* atoms_names[4] =
 	{
 		"_NET_WM_STATE_MAXIMIZED_HORZ",
 		"_NET_WM_STATE_MAXIMIZED_VERT",
 		"_NET_WM_STATE_FULLSCREEN",
+		"_NET_WM_STATE",
 	};
 
-	for(uint8_t i = 0; i < 3; ++i)
+	for(uint8_t i = 0; i < 4; ++i)
 	{
 		cookie = xcb_intern_atom(
 			globox->x11_conn,
@@ -215,14 +200,13 @@ static inline bool init_ewmh(struct globox* globox)
 			return false;
 		}
 
-		globox->ewmh_atoms[i] = reply->atom;
+		globox->x11_atoms[i] = reply->atom;
 
 		free(reply);
 	}
 
 	return true;
 }
-#endif
 
 bool globox_open_x11(struct globox* globox)
 {
@@ -230,12 +214,10 @@ bool globox_open_x11(struct globox* globox)
 	globox->x11_conn = xcb_connect(NULL, &(globox->x11_screen));
 
 	// provide ewmh-dependant functions
-#ifdef GLOBOX_EWMH
-	if (!init_ewmh(globox))
+	if (!init_atoms(globox))
 	{
 		return false;
 	}
-#endif
 
 	xcb_screen_t* screen = get_screen(globox);
 
@@ -325,7 +307,6 @@ void globox_close_x11(struct globox* globox)
 		xcb_destroy_window(globox->x11_conn, globox->x11_win);
 	}
 
-	xcb_ewmh_connection_wipe(&(globox->ewmh_conn));
 	xcb_disconnect(globox->x11_conn);
 }
 
@@ -416,54 +397,60 @@ void globox_set_title_x11(struct globox* globox, const char* title)
 		title);
 }
 
-#ifdef GLOBOX_EWMH
 static inline void set_state(
 	struct globox* globox,
 	xcb_atom_t atom,
-	xcb_ewmh_wm_state_action_t action)
+	uint32_t action)
 {
-	xcb_ewmh_request_change_wm_state(
-		&(globox->ewmh_conn),
-		globox->x11_screen,
+	xcb_client_message_event_t ev;
+
+	ev.response_type = XCB_CLIENT_MESSAGE;
+	ev.type = globox->x11_atoms[3];
+	ev.format = 32;
+	ev.window = globox->x11_win;
+	ev.data.data32[0] = action;
+	ev.data.data32[1] = atom;
+	ev.data.data32[2] = XCB_ATOM_NONE;
+	ev.data.data32[3] = 0;
+	ev.data.data32[4] = 0;
+
+	xcb_send_event(
+		globox->x11_conn,
+		1,
 		globox->x11_win,
-		action,
-		globox->ewmh_conn._NET_WM_STATE,
-		atom,
-		XCB_EWMH_CLIENT_SOURCE_TYPE_NORMAL);
+		XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY,
+		(const char*)(&ev));
 }
-#endif
 
 void globox_set_state_x11(struct globox* globox, enum globox_state state)
 {
-#ifdef GLOBOX_EWMH
 	switch (state)
 	{
 		case GLOBOX_STATE_REGULAR:
 		{
-			set_state(globox, globox->ewmh_atoms[2], XCB_EWMH_WM_STATE_REMOVE);
-			set_state(globox, globox->ewmh_atoms[0], XCB_EWMH_WM_STATE_REMOVE);
-			set_state(globox, globox->ewmh_atoms[1], XCB_EWMH_WM_STATE_REMOVE);
+			set_state(globox, globox->x11_atoms[2], 0);
+			set_state(globox, globox->x11_atoms[0], 0);
+			set_state(globox, globox->x11_atoms[1], 0);
 
 			break;
 		}
 		case GLOBOX_STATE_MAXIMIZED:
 		{
-			set_state(globox, globox->ewmh_atoms[2], XCB_EWMH_WM_STATE_REMOVE);
-			set_state(globox, globox->ewmh_atoms[0], XCB_EWMH_WM_STATE_ADD);
-			set_state(globox, globox->ewmh_atoms[1], XCB_EWMH_WM_STATE_ADD);
+			set_state(globox, globox->x11_atoms[2], 0);
+			set_state(globox, globox->x11_atoms[0], 1);
+			set_state(globox, globox->x11_atoms[1], 1);
 
 			break;
 		}
 		case GLOBOX_STATE_FULLSCREEN:
 		{
-			set_state(globox, globox->ewmh_atoms[0], XCB_EWMH_WM_STATE_REMOVE);
-			set_state(globox, globox->ewmh_atoms[1], XCB_EWMH_WM_STATE_REMOVE);
-			set_state(globox, globox->ewmh_atoms[2], XCB_EWMH_WM_STATE_ADD);
+			set_state(globox, globox->x11_atoms[0], 0);
+			set_state(globox, globox->x11_atoms[1], 0);
+			set_state(globox, globox->x11_atoms[2], 1);
 
 			break;
 		}
 	}
-#endif
 
 	globox->state = state;
 }

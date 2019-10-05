@@ -3,10 +3,9 @@ CC = gcc
 FLAGS = -std=c99 -pedantic -g
 FLAGS+= -Wall -Wno-unused-parameter -Wextra -Werror=vla -Werror
 FLAGS+= -DGLOBOX_X11
-FLAGS+= -DGLOBOX_EWMH
 FLAGS+= -DGLOBOX_WAYLAND
 VALGRIND = --show-leak-kinds=all --track-origins=yes --leak-check=full
-LINK = -lxcb -lxcb-shm -lxcb-ewmh
+LINK = -lxcb -lxcb-shm
 LINK+= -lwayland-client -lrt
 CMD = ./$(NAME)
 
