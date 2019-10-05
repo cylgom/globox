@@ -397,6 +397,9 @@ void globox_set_title_x11(struct globox* globox, const char* title)
 		title);
 }
 
+// there is a bug in ewmh that prevents fullscreen from working properly
+// since keeping xcb-ewmh around only for initialization would be kind
+// of silly we removed the dependency and used raw xcb all the way
 static inline void set_state(
 	struct globox* globox,
 	xcb_atom_t atom,
