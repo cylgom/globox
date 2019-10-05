@@ -325,6 +325,7 @@ void globox_close_x11(struct globox* globox)
 		xcb_destroy_window(globox->x11_conn, globox->x11_win);
 	}
 
+	xcb_ewmh_connection_wipe(&(globox->ewmh_conn));
 	xcb_disconnect(globox->x11_conn);
 }
 
