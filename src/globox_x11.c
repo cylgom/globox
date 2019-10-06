@@ -404,65 +404,98 @@ inline bool globox_reserve_x11(
 	if ((globox->buf_width * globox->buf_height) < (width * height))
 	{
 		printf("entering reserve | cur %d %d | new %d %d\n", globox->buf_width, globox->buf_height, width, height);
+		xcb_generic_error_t* error;
+		xcb_randr_get_screen_info_cookie_t screen_cookie;
+		xcb_randr_get_screen_info_reply_t* screen_reply;
+		screen_cookie = xcb_randr_get_screen_info(globox->x11_conn, globox->x11_win);
+		screen_reply = xcb_randr_get_screen_info_reply(globox->x11_conn, screen_cookie, &error);
+
+		if (error != NULL)
+		{
+			return false;
+		}
+
+		xcb_window_t root = screen_reply->root;
+		free(screen_reply);
+
+		xcb_get_geometry_cookie_t win_cookie;
+		xcb_get_geometry_reply_t* win_reply;
+		win_cookie = xcb_get_geometry(globox->x11_conn, root);
+		win_reply = xcb_get_geometry_reply(globox->x11_conn, win_cookie, &error);
+
+		if (error != NULL)
+		{
+			return false;
+		}
+
+		width = (1 + (width / win_reply->width)) * win_reply->width;
+		height = (1 + (height / win_reply->height)) * win_reply->height;
+		free(win_reply);
+
+		globox->buf_width = width;
+		globox->buf_height = height;
+
+		printf("quitting reserve | %d %d\n", width, height);
 
 		if (globox->x11_socket)
 		{
-			xcb_generic_error_t* error;
-			xcb_randr_get_screen_info_cookie_t screen_cookie;
-			xcb_randr_get_screen_info_reply_t* screen_reply;
-			screen_cookie = xcb_randr_get_screen_info(globox->x11_conn, globox->x11_win);
-			screen_reply = xcb_randr_get_screen_info_reply(globox->x11_conn, screen_cookie, &error);
-
-			if (error != NULL)
-			{
-				return false;
-			}
-
-			xcb_window_t root = screen_reply->root;
-			free(screen_reply);
-
-			xcb_get_geometry_cookie_t win_cookie;
-			xcb_get_geometry_reply_t* win_reply;
-			win_cookie = xcb_get_geometry(globox->x11_conn, root);
-			win_reply = xcb_get_geometry_reply(globox->x11_conn, win_cookie, &error);
-
-			if (error != NULL)
-			{
-				return false;
-			}
-
-			width = (1 + (width / win_reply->width)) * win_reply->width;
-			height = (1 + (height / win_reply->height)) * win_reply->height;
-			free(win_reply);
-
-			printf("quitting reserve | %d %d\n", width, height);
-			globox->buf_width = width;
-			globox->buf_height = height;
 			globox->rgba = realloc(globox->rgba, 4 * width * height);
+		}
+		else
+		{
+			globox->x11_shm.shmid = shmget(
+				IPC_PRIVATE,
+				4 * width * height,
+				IPC_CREAT | 0600);
+			uint8_t* tmpaddr = shmat(globox->x11_shm.shmid, 0, 0);
 
-			return (globox->rgba != NULL);
+			xcb_shm_detach(globox->x11_conn, globox->x11_shm.shmseg);
+			xcb_shm_attach(globox->x11_conn, globox->x11_shm.shmseg, globox->x11_shm.shmid, 0);
+
+			shmctl(globox->x11_shm.shmid, IPC_RMID, 0);
+			memcpy((uint32_t*) tmpaddr, globox->rgba, 4 * globox->width * globox->height);
+
+			shmdt(globox->x11_shm.shmaddr);
+			globox->x11_shm.shmaddr = tmpaddr;
+
+			globox->rgba = (uint32_t*) globox->x11_shm.shmaddr;
 		}
 	}
 
-	return true;
+	return (globox->rgba != NULL);
 }
 
 inline bool globox_shrink_x11(struct globox* globox)
 {
+	globox->buf_width = globox->width;
+	globox->buf_height = globox->height;
+	printf("shrinked to | %d %d\n", globox->buf_width, globox->buf_height);
+
 	if (globox->x11_socket)
 	{
 		globox->rgba = realloc(globox->rgba, 4 * globox->width * globox->height);
-		globox->buf_width = globox->width;
-		globox->buf_height = globox->height;
-
-		printf("shrinked to | %d %d\n", globox->buf_width, globox->buf_height);
-
-		return (globox->rgba != NULL);
 	}
 	else
 	{
-		return true;
+		globox->x11_shm.shmid = shmget(
+			IPC_PRIVATE,
+			4 * globox->width * globox->height,
+			IPC_CREAT | 0600);
+		uint8_t* tmpaddr = shmat(globox->x11_shm.shmid, 0, 0);
+
+		xcb_shm_detach(globox->x11_conn, globox->x11_shm.shmseg);
+		xcb_shm_attach(globox->x11_conn, globox->x11_shm.shmseg, globox->x11_shm.shmid, 0);
+
+		shmctl(globox->x11_shm.shmid, IPC_RMID, 0);
+		memcpy((uint32_t*) tmpaddr, globox->rgba, 4 * globox->width * globox->height);
+
+		shmdt(globox->x11_shm.shmaddr);
+		globox->x11_shm.shmaddr = tmpaddr;
+
+		globox->rgba = (uint32_t*) globox->x11_shm.shmaddr;
 	}
+
+	return (globox->rgba != NULL);
 }
 
 void globox_set_title_x11(struct globox* globox, const char* title)
