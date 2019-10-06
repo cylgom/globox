@@ -139,14 +139,6 @@ static inline bool buffer_socket(struct globox* globox)
 	// create the pixmap
 	globox->x11_pix = xcb_generate_id(globox->x11_conn);
 
-	xcb_create_pixmap(
-		globox->x11_conn,
-		24, // force 24bpp instead of geometry->depth
-		globox->x11_pix,
-		globox->x11_win,
-		globox->width,
-		globox->height);
-
 	return true;
 }
 
@@ -343,6 +335,14 @@ void globox_copy_x11(
 		int32_t y2 = y;
 		uint32_t height2 = height;
 
+		xcb_create_pixmap(
+			globox->x11_conn,
+			24, // force 24bpp instead of geometry->depth
+			globox->x11_pix,
+			globox->x11_win,
+			width,
+			height);
+
 		if (len_theoric >= len_max)
 		{
 			uint64_t rows_batch = ((len_max << 2) - len) / (4 * globox->width);
@@ -356,8 +356,8 @@ void globox_copy_x11(
 					globox->x11_gfx,
 					width,
 					height2,
-					x,
-					y2,
+					0,
+					0,
 					0,
 					24,
 					4 * width * height2,
@@ -375,25 +375,41 @@ void globox_copy_x11(
 			globox->x11_gfx,
 			width,
 			height2,
-			x,
-			y2,
+			0,
+			0,
 			0,
 			24,
 			4 * width * height2,
 			(void*) (globox->rgba + x + (y2 * globox->width)));
-	}
 
-	xcb_copy_area(
-		globox->x11_conn,
-		globox->x11_pix,
-		globox->x11_win,
-		globox->x11_gfx,
-		x,
-		y,
-		x,
-		y,
-		width,
-		height);
+		xcb_copy_area(
+			globox->x11_conn,
+			globox->x11_pix,
+			globox->x11_win,
+			globox->x11_gfx,
+			0,
+			0,
+			x,
+			y,
+			width,
+			height);
+
+		xcb_free_pixmap(globox->x11_conn, globox->x11_pix);
+	}
+	else
+	{
+		xcb_copy_area(
+			globox->x11_conn,
+			globox->x11_pix,
+			globox->x11_win,
+			globox->x11_gfx,
+			x,
+			y,
+			x,
+			y,
+			width,
+			height);
+	}
 }
 
 // potentially loose all info in the buffer
@@ -627,6 +643,17 @@ void globox_set_pos_x11(struct globox* globox, uint32_t x, uint32_t y)
 void globox_set_size_x11(struct globox* globox, uint32_t width, uint32_t height)
 {
 	uint32_t values[2] = {width, height};
+
+	xcb_free_pixmap(globox->x11_conn, globox->x11_pix);
+	xcb_shm_create_pixmap(
+		globox->x11_conn,
+		globox->x11_pix,
+		globox->x11_win,
+		width,
+		height,
+		24, // force 24bpp instead of geometry->depth
+		globox->x11_shm.shmseg,
+		0);
 
 	xcb_configure_window(
 		globox->x11_conn,
