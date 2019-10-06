@@ -26,6 +26,8 @@ bool globox_open(
 	globox->y = y;
 	globox->width = width;
 	globox->height = height;
+	globox->buf_width = width;
+	globox->buf_height = height;
 
 #ifdef GLOBOX_WAYLAND
 	ok = globox_open_wayland(globox);
@@ -137,14 +139,36 @@ void globox_set_pos(struct globox* globox, uint32_t x, uint32_t y)
 #endif
 }
 
-void globox_set_size(struct globox* globox, uint32_t width, uint32_t height)
+bool globox_set_size(struct globox* globox, uint32_t width, uint32_t height)
 {
+	bool ret = true;
+
 #ifdef GLOBOX_X11
 	if (globox->backend == GLOBOX_BACKEND_X11)
 	{
+		ret = globox_reserve_x11(globox, width, height);
 		globox_set_size_x11(globox, width, height);
 	}
 #endif
+
+	globox->width = width;
+	globox->height = height;
+
+	return ret;
+}
+
+bool globox_shrink(struct globox* globox)
+{
+	bool ret = true;
+
+#ifdef GLOBOX_X11
+	if (globox->backend == GLOBOX_BACKEND_X11)
+	{
+		ret = globox_shrink_x11(globox);
+	}
+#endif
+
+	return ret;
 }
 
 void globox_set_visible(struct globox* globox, bool visible)

@@ -96,11 +96,13 @@ int main()
 
 		while (size < 500)
 		{
-			usleep(1000);
+			++size;
 			globox_set_size(&ctx, size, size);
 			globox_commit(&ctx);
-			++size;
+			usleep(1000);
 		}
+
+		globox_shrink(&ctx);
 
 		while (size > 0)
 		{

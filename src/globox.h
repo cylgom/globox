@@ -31,6 +31,8 @@ struct globox
 	int32_t y;
 	uint32_t width;
 	uint32_t height;
+	uint32_t buf_width;
+	uint32_t buf_height;
 	uint32_t* rgba;
 
 	char* title;
@@ -76,7 +78,8 @@ void globox_copy(
 void globox_set_title(struct globox* globox, char* title);
 void globox_set_state(struct globox* globox, enum globox_state state);
 void globox_set_pos(struct globox* globox, uint32_t x, uint32_t y);
-void globox_set_size(struct globox* globox, uint32_t width, uint32_t height);
+bool globox_set_size(struct globox* globox, uint32_t width, uint32_t height);
+bool globox_shrink(struct globox* globox);
 void globox_set_visible(struct globox* globox, bool visible);
 
 // getters

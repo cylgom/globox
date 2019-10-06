@@ -8,9 +8,11 @@
 
 #include <xcb/xcb.h>
 #include <xcb/shm.h>
+#include <xcb/randr.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 enum x11_atom_types
 {
@@ -392,6 +394,75 @@ void globox_copy_x11(
 		y,
 		width,
 		height);
+}
+
+inline bool globox_reserve_x11(
+	struct globox* globox,
+	uint32_t width,
+	uint32_t height)
+{
+	if ((globox->buf_width * globox->buf_height) < (width * height))
+	{
+		printf("entering reserve | cur %d %d | new %d %d\n", globox->buf_width, globox->buf_height, width, height);
+
+		if (globox->x11_socket)
+		{
+			xcb_generic_error_t* error;
+			xcb_randr_get_screen_info_cookie_t screen_cookie;
+			xcb_randr_get_screen_info_reply_t* screen_reply;
+			screen_cookie = xcb_randr_get_screen_info(globox->x11_conn, globox->x11_win);
+			screen_reply = xcb_randr_get_screen_info_reply(globox->x11_conn, screen_cookie, &error);
+
+			if (error != NULL)
+			{
+				return false;
+			}
+
+			xcb_window_t root = screen_reply->root;
+			free(screen_reply);
+
+			xcb_get_geometry_cookie_t win_cookie;
+			xcb_get_geometry_reply_t* win_reply;
+			win_cookie = xcb_get_geometry(globox->x11_conn, root);
+			win_reply = xcb_get_geometry_reply(globox->x11_conn, win_cookie, &error);
+
+			if (error != NULL)
+			{
+				return false;
+			}
+
+			width = (1 + (width / win_reply->width)) * win_reply->width;
+			height = (1 + (height / win_reply->height)) * win_reply->height;
+			free(win_reply);
+
+			printf("quitting reserve | %d %d\n", width, height);
+			globox->buf_width = width;
+			globox->buf_height = height;
+			globox->rgba = realloc(globox->rgba, 4 * width * height);
+
+			return (globox->rgba != NULL);
+		}
+	}
+
+	return true;
+}
+
+inline bool globox_shrink_x11(struct globox* globox)
+{
+	if (globox->x11_socket)
+	{
+		globox->rgba = realloc(globox->rgba, 4 * globox->width * globox->height);
+		globox->buf_width = globox->width;
+		globox->buf_height = globox->height;
+
+		printf("shrinked to | %d %d\n", globox->buf_width, globox->buf_height);
+
+		return (globox->rgba != NULL);
+	}
+	else
+	{
+		return true;
+	}
 }
 
 void globox_set_title_x11(struct globox* globox, const char* title)
