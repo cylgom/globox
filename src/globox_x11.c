@@ -42,7 +42,7 @@ static inline void create_window(struct globox* globox, xcb_screen_t* screen)
 	uint32_t values[2] =
 	{
 		screen->black_pixel,
-		XCB_EVENT_MASK_EXPOSURE,
+		XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_STRUCTURE_NOTIFY,
 	};
 
 	globox->x11_win = xcb_generate_id(globox->x11_conn);
@@ -496,6 +496,45 @@ inline bool globox_shrink_x11(struct globox* globox)
 	}
 
 	return (globox->rgba != NULL);
+}
+
+bool globox_handle_events_x11(struct globox* globox)
+{
+	xcb_generic_event_t* event = xcb_poll_for_event(globox->x11_conn);
+	bool ret = true;
+
+	while ((event != NULL) && ret)
+	{
+		switch (event->response_type & ~0x80)
+		{
+			case XCB_EXPOSE:
+			{
+				xcb_expose_event_t* expose = (xcb_expose_event_t*) event;
+
+				globox_copy_x11(globox,
+					expose->x,
+					expose->y,
+					expose->width,
+					expose->height);
+
+				globox_commit_x11(globox);
+
+				break;
+			}
+			case XCB_CONFIGURE_NOTIFY:
+			{
+				xcb_configure_notify_event_t* resize = (xcb_configure_notify_event_t*) event;
+				ret = globox_reserve_x11(globox, resize->width, resize->height);
+
+				break;
+			}
+		}
+
+		free(event);
+		event = xcb_poll_for_event(globox->x11_conn);
+	}
+
+	return ret;
 }
 
 void globox_set_title_x11(struct globox* globox, const char* title)

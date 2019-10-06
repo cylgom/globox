@@ -109,6 +109,20 @@ void globox_copy(
 #endif
 }
 
+bool globox_handle_events(struct globox* globox)
+{
+	bool ret = true;
+
+#ifdef GLOBOX_X11
+	if (globox->backend == GLOBOX_BACKEND_X11)
+	{
+		ret = globox_handle_events_x11(globox);
+	}
+#endif
+
+	return ret;
+}
+
 void globox_set_title(struct globox* globox, char* title)
 {
 #ifdef GLOBOX_X11

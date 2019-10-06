@@ -2,6 +2,7 @@
 
 #include "globox.h"
 #include <unistd.h>
+#include <sys/time.h>
 #include <stdio.h>
 
 extern unsigned char iconpix_beg;
@@ -112,7 +113,27 @@ int main()
 			--size;
 		}
 
+		globox_set_size(&ctx, 100, 100);
+		globox_commit(&ctx);
+
 		sleep(1);
+
+		struct timeval chrono_struct;
+		uint64_t new;
+		uint64_t old;
+
+		gettimeofday(&chrono_struct, NULL);
+		new = (uint64_t) chrono_struct.tv_sec;
+		old = new;
+
+		while ((new - old) < 5)
+		{
+			sleep(1);
+			globox_handle_events(&ctx);
+
+			gettimeofday(&chrono_struct, NULL);
+			new = (uint64_t) chrono_struct.tv_sec;
+		}
 
 		globox_close(&ctx);
 	}
