@@ -91,21 +91,27 @@ void globox_copy(
 	uint32_t height)
 {
 #ifdef GLOBOX_X11
-	globox_copy_x11(
-		globox,
-		x,
-		y,
-		width,
-		height);
+	if (globox->backend == GLOBOX_BACKEND_X11)
+	{
+		globox_copy_x11(
+			globox,
+			x,
+			y,
+			width,
+			height);
+	}
 #endif
 
 #ifdef GLOBOX_WAYLAND
-	globox_copy_wayland(
-		globox,
-		x,
-		y,
-		width,
-		height);
+	if (globox->backend == GLOBOX_BACKEND_WAYLAND)
+	{
+		globox_copy_wayland(
+			globox,
+			x,
+			y,
+			width,
+			height);
+	}
 #endif
 }
 

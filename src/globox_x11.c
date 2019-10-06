@@ -396,6 +396,7 @@ void globox_copy_x11(
 		height);
 }
 
+// potentially loose all info in the buffer
 inline bool globox_reserve_x11(
 	struct globox* globox,
 	uint32_t width,
@@ -439,24 +440,25 @@ inline bool globox_reserve_x11(
 
 		if (globox->x11_socket)
 		{
-			globox->rgba = realloc(globox->rgba, 4 * width * height);
+			// should be faster than realloc
+			free(globox->rgba);
+			globox->rgba = malloc(4 * width * height);
 		}
 		else
 		{
+			// free
+			xcb_shm_detach(globox->x11_conn, globox->x11_shm.shmseg);
+			shmdt(globox->x11_shm.shmaddr);
+
+			// malloc
 			globox->x11_shm.shmid = shmget(
 				IPC_PRIVATE,
 				4 * width * height,
 				IPC_CREAT | 0600);
-			uint8_t* tmpaddr = shmat(globox->x11_shm.shmid, 0, 0);
+			globox->x11_shm.shmaddr = shmat(globox->x11_shm.shmid, 0, 0);
 
-			xcb_shm_detach(globox->x11_conn, globox->x11_shm.shmseg);
 			xcb_shm_attach(globox->x11_conn, globox->x11_shm.shmseg, globox->x11_shm.shmid, 0);
-
 			shmctl(globox->x11_shm.shmid, IPC_RMID, 0);
-			memcpy((uint32_t*) tmpaddr, globox->rgba, 4 * globox->width * globox->height);
-
-			shmdt(globox->x11_shm.shmaddr);
-			globox->x11_shm.shmaddr = tmpaddr;
 
 			globox->rgba = (uint32_t*) globox->x11_shm.shmaddr;
 		}

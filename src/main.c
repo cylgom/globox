@@ -36,7 +36,7 @@ int main()
 		for (int i = 0; i < (100 * 100); ++i)
 		{
 			usleep(1000);
-			ctx.rgba[i] = 0xFFFFFF;
+			ctx.rgba[i] = 0xFFFFFFFF;
 			globox_copy(&ctx, 10, 10, 80, 80);
 			globox_commit(&ctx);
 		}
@@ -103,7 +103,25 @@ int main()
 			usleep(1000);
 		}
 
+		int pos;
+
+		for (int i = 0; i < (100 * 100); ++i)
+		{
+			pos = ((i / 100) * ctx.width) + (i % 100);
+			ctx.rgba[pos] = 0xFFFFFFFF;
+		}
+
+		globox_copy(&ctx, 10, 10, 80, 80);
+		globox_commit(&ctx);
+
+		sleep(1);
+
 		globox_shrink(&ctx);
+
+		globox_copy(&ctx, 10, 10, 80, 80);
+		globox_commit(&ctx);
+
+		sleep(1);
 
 		while (size > 0)
 		{
@@ -126,11 +144,9 @@ int main()
 		new = (uint64_t) chrono_struct.tv_sec;
 		old = new;
 
-		while ((new - old) < 5)
+		while ((new - old) < 10)
 		{
-			sleep(1);
 			globox_handle_events(&ctx);
-
 			gettimeofday(&chrono_struct, NULL);
 			new = (uint64_t) chrono_struct.tv_sec;
 		}
