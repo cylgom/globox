@@ -85,6 +85,6 @@ enum globox_state globox_get_state(struct globox* globox);
 void globox_get_pos(struct globox* globox, int32_t* x, int32_t* y);
 void globox_get_size(struct globox* globox, uint32_t* width, uint32_t* height);
 bool globox_get_visible(struct globox* globox);
-void globox_set_icon(struct globox* globox, uint64_t* rgba);
+void globox_set_icon(struct globox* globox, uint32_t* bgra);
 
 #endif

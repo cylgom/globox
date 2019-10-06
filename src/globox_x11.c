@@ -504,7 +504,7 @@ void globox_set_visible_x11(struct globox* globox, bool visible)
 	globox->x11_visible = visible;
 }
 
-void globox_set_icon_x11(struct globox* globox, uint64_t* pixmap, uint32_t len)
+void globox_set_icon_x11(struct globox* globox, uint32_t* pixmap, uint32_t len)
 {
 	xcb_change_property(
 		globox->x11_conn,
@@ -513,7 +513,7 @@ void globox_set_icon_x11(struct globox* globox, uint64_t* pixmap, uint32_t len)
 		globox->x11_atoms[ATOM_ICON],
 		XCB_ATOM_CARDINAL,
 		32,
-		len * 8,
+		len,
 		pixmap);
 
 	xcb_flush(globox->x11_conn);
