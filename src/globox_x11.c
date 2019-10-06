@@ -340,7 +340,7 @@ void globox_copy_x11(
 			24, // force 24bpp instead of geometry->depth
 			globox->x11_pix,
 			globox->x11_win,
-			width,
+			globox->width,
 			height);
 
 		if (len_theoric >= len_max)
@@ -354,14 +354,14 @@ void globox_copy_x11(
 					XCB_IMAGE_FORMAT_Z_PIXMAP,
 					globox->x11_pix,
 					globox->x11_gfx,
-					width,
+					globox->width,
 					height2,
 					0,
 					0,
 					0,
 					24,
-					4 * width * height2,
-					(void*) (globox->rgba + x + (y2 * globox->width)));
+					4 * globox->width * height2,
+					(void*) (globox->rgba + (y2 * globox->width)));
 
 				y2 += rows_batch;
 				height2 -= rows_batch;
@@ -373,14 +373,14 @@ void globox_copy_x11(
 			XCB_IMAGE_FORMAT_Z_PIXMAP,
 			globox->x11_pix,
 			globox->x11_gfx,
-			width,
+			globox->width,
 			height2,
 			0,
 			0,
 			0,
 			24,
-			4 * width * height2,
-			(void*) (globox->rgba + x + (y2 * globox->width)));
+			4 * globox->width * height2,
+			(void*) (globox->rgba + (y2 * globox->width)));
 
 		xcb_copy_area(
 			globox->x11_conn,
