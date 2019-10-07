@@ -356,12 +356,12 @@ void globox_copy_x11(
 					globox->x11_pix,
 					globox->x11_gfx,
 					globox->width,
-					height2,
+					rows_batch,
 					0,
-					0,
+					y2,
 					0,
 					24,
-					4 * globox->width * height2,
+					4 * globox->width * rows_batch,
 					(void*) (globox->rgba + (y2 * globox->width)));
 
 				y2 += rows_batch;
@@ -377,42 +377,28 @@ void globox_copy_x11(
 			globox->width,
 			height2,
 			0,
-			0,
+			y2,
 			0,
 			24,
 			4 * globox->width * height2,
 			(void*) (globox->rgba + (y2 * globox->width)));
+	}
 
-		xcb_copy_area(
-			globox->x11_conn,
-			globox->x11_pix,
-			globox->x11_win,
-			globox->x11_gfx,
-			0,
-			0,
-			x,
-			y,
-			width,
-			height);
-	}
-	else
-	{
-		xcb_copy_area(
-			globox->x11_conn,
-			globox->x11_pix,
-			globox->x11_win,
-			globox->x11_gfx,
-			x,
-			y,
-			x,
-			y,
-			width,
-			height);
-	}
+	xcb_copy_area(
+		globox->x11_conn,
+		globox->x11_pix,
+		globox->x11_win,
+		globox->x11_gfx,
+		x,
+		y,
+		x,
+		y,
+		width,
+		height);
 }
 
 // potentially loose all info in the buffer
-inline bool globox_reserve_x11(
+static inline bool globox_reserve(
 	struct globox* globox,
 	uint32_t width,
 	uint32_t height)
@@ -479,6 +465,31 @@ inline bool globox_reserve_x11(
 		}
 	}
 
+	if (globox->x11_socket)
+	{
+		xcb_free_pixmap(globox->x11_conn, globox->x11_pix);
+		xcb_create_pixmap(
+			globox->x11_conn,
+			24, // force 24bpp instead of geometry->depth
+			globox->x11_pix,
+			globox->x11_win,
+			width,
+			height);
+	}
+	else
+	{
+		xcb_free_pixmap(globox->x11_conn, globox->x11_pix);
+		xcb_shm_create_pixmap(
+			globox->x11_conn,
+			globox->x11_pix,
+			globox->x11_win,
+			width,
+			height,
+			24, // force 24bpp instead of geometry->depth
+			globox->x11_shm.shmseg,
+			0);
+	}
+
 	return (globox->rgba != NULL);
 }
 
@@ -541,7 +552,9 @@ bool globox_handle_events_x11(struct globox* globox)
 			case XCB_CONFIGURE_NOTIFY:
 			{
 				xcb_configure_notify_event_t* resize = (xcb_configure_notify_event_t*) event;
-				ret = globox_reserve_x11(globox, resize->width, resize->height);
+				ret = globox_reserve(globox, resize->width, resize->height);
+				globox->width = resize->width;
+				globox->height = resize->height;
 
 				break;
 			}
@@ -639,40 +652,22 @@ void globox_set_pos_x11(struct globox* globox, uint32_t x, uint32_t y)
 		values);
 }
 
-void globox_set_size_x11(struct globox* globox, uint32_t width, uint32_t height)
+bool globox_set_size_x11(struct globox* globox, uint32_t width, uint32_t height)
 {
 	uint32_t values[2] = {width, height};
 
-	if (globox->x11_socket)
+	bool ret = globox_reserve(globox, width, height);
+
+	if (ret)
 	{
-		xcb_free_pixmap(globox->x11_conn, globox->x11_pix);
-		xcb_create_pixmap(
+		xcb_configure_window(
 			globox->x11_conn,
-			24, // force 24bpp instead of geometry->depth
-			globox->x11_pix,
 			globox->x11_win,
-			width,
-			height);
-	}
-	else
-	{
-		xcb_free_pixmap(globox->x11_conn, globox->x11_pix);
-		xcb_shm_create_pixmap(
-			globox->x11_conn,
-			globox->x11_pix,
-			globox->x11_win,
-			width,
-			height,
-			24, // force 24bpp instead of geometry->depth
-			globox->x11_shm.shmseg,
-			0);
+			XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
+			values);
 	}
 
-	xcb_configure_window(
-		globox->x11_conn,
-		globox->x11_win,
-		XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
-		values);
+	return ret;
 }
 
 void globox_set_visible_x11(struct globox* globox, bool visible)

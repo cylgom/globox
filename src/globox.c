@@ -166,8 +166,7 @@ bool globox_set_size(struct globox* globox, uint32_t width, uint32_t height)
 #ifdef GLOBOX_X11
 	if (globox->backend == GLOBOX_BACKEND_X11)
 	{
-		ret = globox_reserve_x11(globox, width, height);
-		globox_set_size_x11(globox, width, height);
+		ret = globox_set_size_x11(globox, width, height);
 	}
 #endif
 
