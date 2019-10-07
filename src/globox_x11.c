@@ -403,6 +403,31 @@ static inline bool globox_reserve(
 	uint32_t width,
 	uint32_t height)
 {
+	if (globox->x11_socket)
+	{
+		xcb_free_pixmap(globox->x11_conn, globox->x11_pix);
+		xcb_create_pixmap(
+			globox->x11_conn,
+			24, // force 24bpp instead of geometry->depth
+			globox->x11_pix,
+			globox->x11_win,
+			width,
+			height);
+	}
+	else
+	{
+		xcb_free_pixmap(globox->x11_conn, globox->x11_pix);
+		xcb_shm_create_pixmap(
+			globox->x11_conn,
+			globox->x11_pix,
+			globox->x11_win,
+			width,
+			height,
+			24, // force 24bpp instead of geometry->depth
+			globox->x11_shm.shmseg,
+			0);
+	}
+
 	if ((globox->buf_width * globox->buf_height) < (width * height))
 	{
 		printf("entering reserve | cur %d %d | new %d %d\n", globox->buf_width, globox->buf_height, width, height);
@@ -463,31 +488,6 @@ static inline bool globox_reserve(
 
 			globox->rgba = (uint32_t*) globox->x11_shm.shmaddr;
 		}
-	}
-
-	if (globox->x11_socket)
-	{
-		xcb_free_pixmap(globox->x11_conn, globox->x11_pix);
-		xcb_create_pixmap(
-			globox->x11_conn,
-			24, // force 24bpp instead of geometry->depth
-			globox->x11_pix,
-			globox->x11_win,
-			width,
-			height);
-	}
-	else
-	{
-		xcb_free_pixmap(globox->x11_conn, globox->x11_pix);
-		xcb_shm_create_pixmap(
-			globox->x11_conn,
-			globox->x11_pix,
-			globox->x11_win,
-			width,
-			height,
-			24, // force 24bpp instead of geometry->depth
-			globox->x11_shm.shmseg,
-			0);
 	}
 
 	return (globox->rgba != NULL);
