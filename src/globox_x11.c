@@ -337,12 +337,12 @@ void globox_copy_x11(
 {
 	if (globox->x11_socket)
 	{
-		size_t len = sizeof (xcb_get_image_request_t);
-		size_t len_theoric = (len + (4 * globox->width * globox->height)) >> 2;
-		uint64_t len_max = xcb_get_maximum_request_length(globox->x11_conn);
-
 		int32_t y2 = y;
 		uint32_t height2 = height;
+
+		size_t len = sizeof (xcb_get_image_request_t);
+		size_t len_theoric = (len + (4 * globox->width * height2)) >> 2;
+		uint64_t len_max = xcb_get_maximum_request_length(globox->x11_conn);
 
 		if (len_theoric >= len_max)
 		{
