@@ -47,6 +47,7 @@ struct globox
 	xcb_gcontext_t x11_gfx;
 	xcb_pixmap_t x11_pix;
 	bool x11_socket;
+	bool x11_pixmap_update;
 	bool x11_visible;
 
 	xcb_atom_t x11_atoms[4];

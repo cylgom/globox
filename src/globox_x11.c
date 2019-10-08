@@ -237,6 +237,7 @@ bool globox_open_x11(struct globox* globox)
 	create_window(globox, screen);
 	create_gfx(globox, screen);
 	xcb_map_window(globox->x11_conn, globox->x11_win);
+	globox->x11_pixmap_update = false;
 	globox->x11_visible = true;
 
 	// operations have no effect when the context is in failure state
@@ -344,6 +345,19 @@ void globox_copy_x11(
 		size_t len_theoric = (len + (4 * globox->width * height2)) >> 2;
 		uint64_t len_max = xcb_get_maximum_request_length(globox->x11_conn);
 
+		if (globox->x11_pixmap_update)
+		{
+			xcb_free_pixmap(globox->x11_conn, globox->x11_pix);
+			xcb_create_pixmap(
+				globox->x11_conn,
+				24, // force 24bpp instead of geometry->depth
+				globox->x11_pix,
+				globox->x11_win,
+				globox->width,
+				globox->height);
+			globox->x11_pixmap_update = false;
+		}
+
 		if (len_theoric >= len_max)
 		{
 			uint64_t rows_batch = ((len_max << 2) - len) / (4 * globox->width);
@@ -383,6 +397,20 @@ void globox_copy_x11(
 			4 * globox->width * height2,
 			(void*) (globox->rgba + (y2 * globox->width)));
 	}
+	else if (globox->x11_pixmap_update)
+	{
+		xcb_free_pixmap(globox->x11_conn, globox->x11_pix);
+		xcb_shm_create_pixmap(
+			globox->x11_conn,
+			globox->x11_pix,
+			globox->x11_win,
+			globox->width,
+			globox->height,
+			24, // force 24bpp instead of geometry->depth
+			globox->x11_shm.shmseg,
+			0);
+		globox->x11_pixmap_update = false;
+	}
 
 	xcb_copy_area(
 		globox->x11_conn,
@@ -403,30 +431,7 @@ static inline bool globox_reserve(
 	uint32_t width,
 	uint32_t height)
 {
-	if (globox->x11_socket)
-	{
-		xcb_free_pixmap(globox->x11_conn, globox->x11_pix);
-		xcb_create_pixmap(
-			globox->x11_conn,
-			24, // force 24bpp instead of geometry->depth
-			globox->x11_pix,
-			globox->x11_win,
-			width,
-			height);
-	}
-	else
-	{
-		xcb_free_pixmap(globox->x11_conn, globox->x11_pix);
-		xcb_shm_create_pixmap(
-			globox->x11_conn,
-			globox->x11_pix,
-			globox->x11_win,
-			width,
-			height,
-			24, // force 24bpp instead of geometry->depth
-			globox->x11_shm.shmseg,
-			0);
-	}
+	globox->x11_pixmap_update = true;
 
 	if ((globox->buf_width * globox->buf_height) < (width * height))
 	{
