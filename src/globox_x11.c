@@ -423,6 +423,11 @@ void globox_copy_x11(
 		y,
 		width,
 		height);
+
+	if (globox->x11_socket)
+	{
+		xcb_flush(globox->x11_conn);
+	}
 }
 
 // potentially loose all info in the buffer
