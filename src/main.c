@@ -144,9 +144,37 @@ int main()
 		new = (uint64_t) chrono_struct.tv_sec;
 		old = new;
 
-		while ((new - old) < 10)
+		uint32_t old_width = ctx.width;
+		uint32_t old_height = ctx.height;
+
+		while ((new - old) < 60)
 		{
 			globox_handle_events(&ctx);
+
+			if ((ctx.width != old_width) || (ctx.height != old_height))
+			{
+				// background
+				for (uint32_t i = 0; i < ctx.height * ctx.width; ++i)
+				{
+					ctx.rgba[i] = 0x88888888;
+				}
+
+				// square
+				uint32_t pos;
+
+				for (uint32_t i = 0; i < (100*100); ++i)
+				{
+					pos = ((ctx.height / 2) - 50 + (i / 100)) * ctx.width
+						+ (ctx.width / 2) - 50 + (i % 100);
+
+					ctx.rgba[pos] = 0xFFFFFFFF;
+				}
+
+				globox_copy(&ctx, 0, 0, ctx.width, ctx.height);
+				old_width = ctx.width;
+				old_height = ctx.height;
+			}
+
 			gettimeofday(&chrono_struct, NULL);
 			new = (uint64_t) chrono_struct.tv_sec;
 		}
