@@ -41,7 +41,7 @@ static inline void create_window(struct globox* globox, xcb_screen_t* screen)
 {
 	uint32_t values[2] =
 	{
-		screen->black_pixel,
+		XCB_BACK_PIXMAP_NONE,
 		XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_STRUCTURE_NOTIFY,
 	};
 
@@ -61,7 +61,7 @@ static inline void create_window(struct globox* globox, xcb_screen_t* screen)
 		0, // TODO window class
 		XCB_WINDOW_CLASS_INPUT_OUTPUT,
 		root_visual,
-		XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,
+		XCB_CW_BACK_PIXMAP | XCB_CW_EVENT_MASK,
 		values);
 }
 
