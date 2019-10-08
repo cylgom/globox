@@ -544,7 +544,7 @@ bool globox_handle_events_x11(struct globox* globox)
 		{
 			case XCB_EXPOSE:
 			{
-				if (!globox->x11_pixmap_update)
+				if (!globox->x11_pixmap_update && globox->x11_socket)
 				{
 					xcb_expose_event_t* expose = (xcb_expose_event_t*) event;
 
@@ -553,6 +553,10 @@ bool globox_handle_events_x11(struct globox* globox)
 						expose->y,
 						expose->width,
 						expose->height);
+				}
+				else
+				{
+					xcb_clear_area(globox->x11_conn, 1, globox->x11_win, 0, 0, globox->width, globox->height);
 				}
 
 				break;
