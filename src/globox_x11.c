@@ -534,11 +534,8 @@ inline bool globox_shrink_x11(struct globox* globox)
 bool globox_handle_events_x11(struct globox* globox)
 {
 	xcb_generic_event_t* event = xcb_poll_for_event(globox->x11_conn);
-	uint32_t x;
-	uint32_t y;
-	uint32_t width;
-	uint32_t height;
-	bool exposed = false;
+	xcb_expose_event_t* expose = NULL;
+	xcb_configure_notify_event_t* resize = NULL;
 	bool ret = true;
 
 	while ((event != NULL) && ret)
@@ -547,51 +544,52 @@ bool globox_handle_events_x11(struct globox* globox)
 		{
 			case XCB_EXPOSE:
 			{
-				xcb_expose_event_t* expose = (xcb_expose_event_t*) event;
-				x = expose->x;
-				y = expose->y;
-				width = expose->width;
-				height = expose->height;
-				exposed = true;
+				if (expose != NULL)
+				{
+					free(expose);
+				}
+
+				expose = (xcb_expose_event_t*) event;
 
 				break;
 			}
 			case XCB_CONFIGURE_NOTIFY:
 			{
-				if (exposed && !globox->x11_pixmap_update)
+				if (resize != NULL)
 				{
-					if (!globox->x11_pixmap_update && globox->x11_socket)
-					{
-						globox_copy_x11(globox,
-							x,
-							y,
-							width,
-							height);
-					}
-					else
-					{
-						xcb_clear_area(globox->x11_conn, 1, globox->x11_win, 0, 0, globox->width, globox->height);
-					}
+					free(resize);
 				}
 
-				xcb_configure_notify_event_t* resize = (xcb_configure_notify_event_t*) event;
-				width = resize->width;
-				height = resize->height;
-				globox->x11_pixmap_update = true;
+				resize = (xcb_configure_notify_event_t*) event;
 
 				break;
 			}
 		}
-
-		free(event);
 		event = xcb_poll_for_event(globox->x11_conn);
 	}
 
-	if (globox->x11_pixmap_update)
+	if (resize != NULL)
 	{
-		ret = globox_reserve(globox, width, height);
-		globox->width = width;
-		globox->height = height;
+		ret = globox_reserve(globox, resize->width, resize->height);
+		globox->width = resize->width;
+		globox->height = resize->height;
+		globox->x11_pixmap_update = true;
+
+		free(resize);
+	}
+
+	if (expose != NULL)
+	{
+		if (!globox->x11_pixmap_update)
+		{
+			globox_copy_x11(globox,
+				expose->x,
+				expose->y,
+				expose->width,
+				expose->height);
+		}
+
+		free(expose);
 	}
 
 	return ret;
