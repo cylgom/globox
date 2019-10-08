@@ -424,10 +424,7 @@ void globox_copy_x11(
 		width,
 		height);
 
-	if (globox->x11_socket)
-	{
-		xcb_flush(globox->x11_conn);
-	}
+	xcb_flush(globox->x11_conn);
 }
 
 // potentially loose all info in the buffer
@@ -556,8 +553,6 @@ bool globox_handle_events_x11(struct globox* globox)
 						expose->y,
 						expose->width,
 						expose->height);
-
-					xcb_flush(globox->x11_conn);
 				}
 
 				break;
