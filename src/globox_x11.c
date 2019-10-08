@@ -542,15 +542,18 @@ bool globox_handle_events_x11(struct globox* globox)
 		{
 			case XCB_EXPOSE:
 			{
-				xcb_expose_event_t* expose = (xcb_expose_event_t*) event;
+				if (!globox->x11_pixmap_update)
+				{
+					xcb_expose_event_t* expose = (xcb_expose_event_t*) event;
 
-				globox_copy_x11(globox,
-					expose->x,
-					expose->y,
-					expose->width,
-					expose->height);
+					globox_copy_x11(globox,
+						expose->x,
+						expose->y,
+						expose->width,
+						expose->height);
 
-				globox_commit_x11(globox);
+					xcb_flush(globox->x11_conn);
+				}
 
 				break;
 			}
