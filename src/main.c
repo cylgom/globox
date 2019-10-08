@@ -151,6 +151,9 @@ int main()
 		{
 			globox_handle_events(&ctx);
 
+			// TODO this or double buffering!
+			usleep(30000);
+
 			if ((ctx.width != old_width) || (ctx.height != old_height))
 			{
 				// background
