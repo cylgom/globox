@@ -433,49 +433,52 @@ static inline bool globox_reserve(
 	uint32_t width,
 	uint32_t height)
 {
-	if ((globox->buf_width * globox->buf_height) < (width * height))
+	if (globox->x11_socket)
 	{
-		printf("entering reserve | cur %d %d | new %d %d\n", globox->buf_width, globox->buf_height, width, height);
-		xcb_generic_error_t* error;
-		xcb_randr_get_screen_info_cookie_t screen_cookie;
-		xcb_randr_get_screen_info_reply_t* screen_reply;
-		screen_cookie = xcb_randr_get_screen_info(globox->x11_conn, globox->x11_win);
-		screen_reply = xcb_randr_get_screen_info_reply(globox->x11_conn, screen_cookie, &error);
-
-		if (error != NULL)
+		if ((globox->buf_width * globox->buf_height) < (width * height))
 		{
-			return false;
-		}
+			printf("entering reserve | cur %d %d | new %d %d\n", globox->buf_width, globox->buf_height, width, height);
+			xcb_generic_error_t* error;
+			xcb_randr_get_screen_info_cookie_t screen_cookie;
+			xcb_randr_get_screen_info_reply_t* screen_reply;
+			screen_cookie = xcb_randr_get_screen_info(globox->x11_conn, globox->x11_win);
+			screen_reply = xcb_randr_get_screen_info_reply(globox->x11_conn, screen_cookie, &error);
 
-		xcb_window_t root = screen_reply->root;
-		free(screen_reply);
+			if (error != NULL)
+			{
+				return false;
+			}
 
-		xcb_get_geometry_cookie_t win_cookie;
-		xcb_get_geometry_reply_t* win_reply;
-		win_cookie = xcb_get_geometry(globox->x11_conn, root);
-		win_reply = xcb_get_geometry_reply(globox->x11_conn, win_cookie, &error);
+			xcb_window_t root = screen_reply->root;
+			free(screen_reply);
 
-		if (error != NULL)
-		{
-			return false;
-		}
+			xcb_get_geometry_cookie_t win_cookie;
+			xcb_get_geometry_reply_t* win_reply;
+			win_cookie = xcb_get_geometry(globox->x11_conn, root);
+			win_reply = xcb_get_geometry_reply(globox->x11_conn, win_cookie, &error);
 
-		width = (1 + (width / win_reply->width)) * win_reply->width;
-		height = (1 + (height / win_reply->height)) * win_reply->height;
-		free(win_reply);
+			if (error != NULL)
+			{
+				return false;
+			}
 
-		globox->buf_width = width;
-		globox->buf_height = height;
+			width = (1 + (width / win_reply->width)) * win_reply->width;
+			height = (1 + (height / win_reply->height)) * win_reply->height;
+			free(win_reply);
 
-		printf("quitting reserve | %d %d\n", width, height);
+			globox->buf_width = width;
+			globox->buf_height = height;
 
-		if (globox->x11_socket)
-		{
+			printf("quitting reserve | %d %d\n", width, height);
+
 			// should be faster than realloc
 			free(globox->rgba);
 			globox->rgba = malloc(4 * width * height);
 		}
-		else
+	}
+	else
+	{
+		if ((globox->buf_width * globox->buf_height) != (width * height))
 		{
 			// free
 			xcb_shm_detach(globox->x11_conn, globox->x11_shm.shmseg);
@@ -493,6 +496,9 @@ static inline bool globox_reserve(
 
 			globox->rgba = (uint32_t*) globox->x11_shm.shmaddr;
 		}
+
+		globox->buf_width = width;
+		globox->buf_height = height;
 	}
 
 	return (globox->rgba != NULL);
@@ -562,6 +568,12 @@ bool globox_handle_events_x11(struct globox* globox)
 
 				resize = (xcb_configure_notify_event_t*) event;
 
+				if (expose != NULL)
+				{
+					free(expose);
+					expose = NULL;
+				}
+
 				break;
 			}
 		}
@@ -580,14 +592,11 @@ bool globox_handle_events_x11(struct globox* globox)
 
 	if (expose != NULL)
 	{
-		if (!globox->x11_socket || !globox->x11_pixmap_update)
-		{
-			globox_copy_x11(globox,
-				expose->x,
-				expose->y,
-				expose->width,
-				expose->height);
-		}
+		globox_copy_x11(globox,
+			expose->x,
+			expose->y,
+			expose->width,
+			expose->height);
 
 		free(expose);
 	}

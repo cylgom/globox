@@ -147,12 +147,9 @@ int main()
 		uint32_t old_width = ctx.width;
 		uint32_t old_height = ctx.height;
 
-		while ((new - old) < 60)
+		while ((new - old) < 10)
 		{
 			globox_handle_events(&ctx);
-
-			// TODO this or double buffering!
-			usleep(30000);
 
 			if ((ctx.width != old_width) || (ctx.height != old_height))
 			{
