@@ -501,6 +501,8 @@ static inline bool globox_reserve(
 		globox->buf_height = height;
 	}
 
+	globox->x11_pixmap_update = true;
+
 	return (globox->rgba != NULL);
 }
 
@@ -585,7 +587,6 @@ bool globox_handle_events_x11(struct globox* globox)
 		ret = globox_reserve(globox, resize->width, resize->height);
 		globox->width = resize->width;
 		globox->height = resize->height;
-		globox->x11_pixmap_update = true;
 
 		free(resize);
 	}
