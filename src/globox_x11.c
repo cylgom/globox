@@ -580,7 +580,7 @@ bool globox_handle_events_x11(struct globox* globox)
 
 	if (expose != NULL)
 	{
-		if (!globox->x11_pixmap_update)
+		if (!globox->x11_socket || !globox->x11_pixmap_update)
 		{
 			globox_copy_x11(globox,
 				expose->x,
