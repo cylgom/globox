@@ -3,10 +3,10 @@ CC = gcc
 FLAGS = -std=c99 -pedantic -g
 FLAGS+= -Wall -Wno-unused-parameter -Wextra -Werror=vla -Werror
 FLAGS+= -DGLOBOX_X11
-FLAGS+= -DGLOBOX_WAYLAND
+#FLAGS+= -DGLOBOX_WAYLAND
 VALGRIND = --show-leak-kinds=all --track-origins=yes --leak-check=full
 LINK = -lxcb -lxcb-shm -lxcb-randr
-LINK+= -lwayland-client -lrt
+#LINK+= -lwayland-client -lrt
 CMD = ./$(NAME)
 
 BIND = bin
@@ -22,8 +22,8 @@ INCL+= -I$(INCD)
 SRCS = $(SRCD)/main.c
 SRCS+= $(SRCD)/globox.c
 SRCS+= $(SRCD)/globox_x11.c
-SRCS+= $(SRCD)/globox_wayland.c
-SRCS+= $(INCD)/xdg-shell-protocol.c
+#SRCS+= $(SRCD)/globox_wayland.c
+#SRCS+= $(INCD)/xdg-shell-protocol.c
 
 SRCS_OBJS := $(patsubst %.c,$(OBJD)/%.o,$(SRCS))
 SRCS_OBJS += $(OBJD)/$(RESD)/iconpix.o

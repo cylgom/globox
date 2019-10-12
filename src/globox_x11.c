@@ -219,7 +219,7 @@ static inline void buffer_shm(struct globox* globox)
 		0);
 }
 
-bool globox_open_x11(struct globox* globox)
+inline bool globox_open_x11(struct globox* globox)
 {
 	// connect to server
 	globox->x11_conn = xcb_connect(NULL, &(globox->x11_screen));
@@ -299,13 +299,10 @@ bool globox_open_x11(struct globox* globox)
 		return false;
 	}
 
-	// otherwise we confirm the X11 client successfully initialized
-	globox->backend = GLOBOX_BACKEND_X11;
-
 	return true;
 }
 
-void globox_close_x11(struct globox* globox)
+inline void globox_close_x11(struct globox* globox)
 {
 	if (globox->x11_socket)
 	{
@@ -399,7 +396,7 @@ static inline bool globox_reserve(
 	return (globox->rgba != NULL);
 }
 
-bool globox_handle_events_x11(struct globox* globox)
+inline bool globox_handle_events_x11(struct globox* globox)
 {
 	xcb_generic_event_t* event = xcb_poll_for_event(globox->x11_conn);
 	xcb_expose_event_t* expose = NULL;
@@ -499,7 +496,7 @@ inline bool globox_shrink_x11(struct globox* globox)
 	return (globox->rgba != NULL);
 }
 
-void globox_copy_x11(
+inline void globox_copy_x11(
 	struct globox* globox,
 	int32_t x,
 	int32_t y,
@@ -597,12 +594,12 @@ void globox_copy_x11(
 	xcb_flush(globox->x11_conn);
 }
 
-void globox_commit_x11(struct globox* globox)
+inline void globox_commit_x11(struct globox* globox)
 {
 	xcb_flush(globox->x11_conn);
 }
 
-void globox_set_icon_x11(struct globox* globox, uint32_t* pixmap, uint32_t len)
+inline void globox_set_icon_x11(struct globox* globox, uint32_t* pixmap, uint32_t len)
 {
 	xcb_change_property(
 		globox->x11_conn,
@@ -617,7 +614,7 @@ void globox_set_icon_x11(struct globox* globox, uint32_t* pixmap, uint32_t len)
 	xcb_flush(globox->x11_conn);
 }
 
-void globox_set_title_x11(struct globox* globox, const char* title)
+inline void globox_set_title_x11(struct globox* globox, const char* title)
 {
 	xcb_change_property(
 		globox->x11_conn,
@@ -633,7 +630,7 @@ void globox_set_title_x11(struct globox* globox, const char* title)
 // there is a bug in ewmh that prevents fullscreen from working properly
 // since keeping xcb-ewmh around only for initialization would be kind
 // of silly we removed the dependency and used raw xcb all the way
-static inline void set_state(
+static void set_state(
 	struct globox* globox,
 	xcb_atom_t atom,
 	uint32_t action)
@@ -658,12 +655,13 @@ static inline void set_state(
 		(const char*)(&ev));
 }
 
-void globox_set_state_x11(struct globox* globox, enum globox_state state)
+inline void globox_set_state_x11(struct globox* globox, enum globox_state state)
 {
 	switch (state)
 	{
 		case GLOBOX_STATE_REGULAR:
 		{
+			xcb_map_window(globox->x11_conn, globox->x11_win);
 			set_state(globox, globox->x11_atoms[ATOM_STATE_FULLSCREEN], 0);
 			set_state(globox, globox->x11_atoms[ATOM_STATE_MAXIMIZED_HORZ], 0);
 			set_state(globox, globox->x11_atoms[ATOM_STATE_MAXIMIZED_VERT], 0);
@@ -672,14 +670,25 @@ void globox_set_state_x11(struct globox* globox, enum globox_state state)
 		}
 		case GLOBOX_STATE_MAXIMIZED:
 		{
+			xcb_map_window(globox->x11_conn, globox->x11_win);
 			set_state(globox, globox->x11_atoms[ATOM_STATE_FULLSCREEN], 0);
 			set_state(globox, globox->x11_atoms[ATOM_STATE_MAXIMIZED_HORZ], 1);
 			set_state(globox, globox->x11_atoms[ATOM_STATE_MAXIMIZED_VERT], 1);
 
 			break;
 		}
+		case GLOBOX_STATE_MINIMIZED:
+		{
+			set_state(globox, globox->x11_atoms[ATOM_STATE_FULLSCREEN], 0);
+			set_state(globox, globox->x11_atoms[ATOM_STATE_MAXIMIZED_HORZ], 0);
+			set_state(globox, globox->x11_atoms[ATOM_STATE_MAXIMIZED_VERT], 0);
+			xcb_unmap_window(globox->x11_conn, globox->x11_win);
+
+			break;
+		}
 		case GLOBOX_STATE_FULLSCREEN:
 		{
+			xcb_map_window(globox->x11_conn, globox->x11_win);
 			set_state(globox, globox->x11_atoms[ATOM_STATE_MAXIMIZED_HORZ], 0);
 			set_state(globox, globox->x11_atoms[ATOM_STATE_MAXIMIZED_VERT], 0);
 			set_state(globox, globox->x11_atoms[ATOM_STATE_FULLSCREEN], 1);
@@ -691,7 +700,7 @@ void globox_set_state_x11(struct globox* globox, enum globox_state state)
 	globox->state = state;
 }
 
-void globox_set_pos_x11(struct globox* globox, uint32_t x, uint32_t y)
+inline void globox_set_pos_x11(struct globox* globox, uint32_t x, uint32_t y)
 {
 	uint32_t values[2] = {x, y};
 
@@ -702,7 +711,7 @@ void globox_set_pos_x11(struct globox* globox, uint32_t x, uint32_t y)
 		values);
 }
 
-bool globox_set_size_x11(struct globox* globox, uint32_t width, uint32_t height)
+inline bool globox_set_size_x11(struct globox* globox, uint32_t width, uint32_t height)
 {
 	uint32_t values[2] = {width, height};
 
@@ -718,20 +727,6 @@ bool globox_set_size_x11(struct globox* globox, uint32_t width, uint32_t height)
 	}
 
 	return ret;
-}
-
-void globox_set_visible_x11(struct globox* globox, bool visible)
-{
-	if (globox->x11_visible && !visible)
-	{
-		xcb_unmap_window(globox->x11_conn, globox->x11_win);
-	}
-	else if (!(globox->x11_visible) && visible)
-	{
-		xcb_map_window(globox->x11_conn, globox->x11_win);
-	}
-
-	globox->x11_visible = visible;
 }
 
 #endif

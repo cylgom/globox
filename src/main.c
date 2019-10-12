@@ -27,10 +27,10 @@ int main()
 		globox_set_title(&ctx, "HELO");
 		globox_set_icon(&ctx, (uint32_t*) &iconpix_beg);
 		sleep(1);
-		globox_set_visible(&ctx, false);
+		globox_set_state(&ctx, GLOBOX_STATE_MINIMIZED);
 		globox_commit(&ctx);
 		sleep(1);
-		globox_set_visible(&ctx, true);
+		globox_set_state(&ctx, GLOBOX_STATE_REGULAR);
 		globox_commit(&ctx);
 
 		for (int i = 0; i < (100 * 100); ++i)
