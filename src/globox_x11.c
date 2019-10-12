@@ -12,7 +12,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 enum x11_atom_types
 {
@@ -437,7 +436,6 @@ static inline bool globox_reserve(
 	{
 		if ((globox->buf_width * globox->buf_height) < (width * height))
 		{
-			printf("entering reserve | cur %d %d | new %d %d\n", globox->buf_width, globox->buf_height, width, height);
 			xcb_generic_error_t* error;
 			xcb_randr_get_screen_info_cookie_t screen_cookie;
 			xcb_randr_get_screen_info_reply_t* screen_reply;
@@ -468,8 +466,6 @@ static inline bool globox_reserve(
 
 			globox->buf_width = width;
 			globox->buf_height = height;
-
-			printf("quitting reserve | %d %d\n", width, height);
 
 			// should be faster than realloc
 			free(globox->rgba);
@@ -510,7 +506,6 @@ inline bool globox_shrink_x11(struct globox* globox)
 {
 	globox->buf_width = globox->width;
 	globox->buf_height = globox->height;
-	printf("shrinked to | %d %d\n", globox->buf_width, globox->buf_height);
 
 	if (globox->x11_socket)
 	{
