@@ -68,11 +68,9 @@ void globox_close(
 	struct globox* globox);
 
 // buffer management
-bool globox_handle_events(
-	struct globox* globox);
+bool globox_handle_events(struct globox* globox);
 
-bool globox_shrink(
-	struct globox* globox);
+bool globox_shrink(struct globox* globox);
 
 // buffer transfer
 void globox_copy(
