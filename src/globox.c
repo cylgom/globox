@@ -10,6 +10,7 @@
 #include "globox_wayland.h"
 #endif
 
+// window creation
 bool globox_open(
 	struct globox* globox,
 	enum globox_state state,
@@ -73,16 +74,36 @@ void globox_close(struct globox* globox)
 #endif
 }
 
-void globox_commit(struct globox* globox)
+// buffer management
+bool globox_handle_events(struct globox* globox)
 {
+	bool ret = true;
+
 #ifdef GLOBOX_X11
 	if (globox->backend == GLOBOX_BACKEND_X11)
 	{
-		globox_commit_x11(globox);
+		ret = globox_handle_events_x11(globox);
 	}
 #endif
+
+	return ret;
 }
 
+bool globox_shrink(struct globox* globox)
+{
+	bool ret = true;
+
+#ifdef GLOBOX_X11
+	if (globox->backend == GLOBOX_BACKEND_X11)
+	{
+		ret = globox_shrink_x11(globox);
+	}
+#endif
+
+	return ret;
+}
+
+// buffer transfer
 void globox_copy(
 	struct globox* globox,
 	int32_t x,
@@ -115,18 +136,25 @@ void globox_copy(
 #endif
 }
 
-bool globox_handle_events(struct globox* globox)
+void globox_commit(struct globox* globox)
 {
-	bool ret = true;
-
 #ifdef GLOBOX_X11
 	if (globox->backend == GLOBOX_BACKEND_X11)
 	{
-		ret = globox_handle_events_x11(globox);
+		globox_commit_x11(globox);
 	}
 #endif
+}
 
-	return ret;
+// setters
+void globox_set_icon(struct globox* globox, uint32_t* bgra)
+{
+#ifdef GLOBOX_X11
+	if (globox->backend == GLOBOX_BACKEND_X11)
+	{
+		globox_set_icon_x11(globox, bgra, 2 + (16 * 16) + 2 + (32 * 32) + 2 + (64 * 64));
+	}
+#endif
 }
 
 void globox_set_title(struct globox* globox, char* title)
@@ -176,36 +204,12 @@ bool globox_set_size(struct globox* globox, uint32_t width, uint32_t height)
 	return ret;
 }
 
-bool globox_shrink(struct globox* globox)
-{
-	bool ret = true;
-
-#ifdef GLOBOX_X11
-	if (globox->backend == GLOBOX_BACKEND_X11)
-	{
-		ret = globox_shrink_x11(globox);
-	}
-#endif
-
-	return ret;
-}
-
 void globox_set_visible(struct globox* globox, bool visible)
 {
 #ifdef GLOBOX_X11
 	if (globox->backend == GLOBOX_BACKEND_X11)
 	{
 		globox_set_visible_x11(globox, visible);
-	}
-#endif
-}
-
-void globox_set_icon(struct globox* globox, uint32_t* bgra)
-{
-#ifdef GLOBOX_X11
-	if (globox->backend == GLOBOX_BACKEND_X11)
-	{
-		globox_set_icon_x11(globox, bgra, 2 + (16 * 16) + 2 + (32 * 32) + 2 + (64 * 64));
 	}
 #endif
 }
