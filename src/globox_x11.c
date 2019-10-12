@@ -22,6 +22,46 @@ enum x11_atom_types
 	ATOM_ICON,
 };
 
+static inline bool init_atoms(struct globox* globox)
+{
+	xcb_intern_atom_cookie_t cookie;
+	xcb_intern_atom_reply_t* reply;
+	xcb_generic_error_t* error;
+	char* atoms_names[5] =
+	{
+		"_NET_WM_STATE_MAXIMIZED_HORZ",
+		"_NET_WM_STATE_MAXIMIZED_VERT",
+		"_NET_WM_STATE_FULLSCREEN",
+		"_NET_WM_STATE",
+		"_NET_WM_ICON",
+	};
+
+	for(uint8_t i = 0; i < 5; ++i)
+	{
+		cookie = xcb_intern_atom(
+			globox->x11_conn,
+			0,
+			strlen(atoms_names[i]),
+			atoms_names[i]);
+
+		reply = xcb_intern_atom_reply(
+			globox->x11_conn,
+			cookie,
+			&error);
+
+		if (error != NULL)
+		{
+			return false;
+		}
+
+		globox->x11_atoms[i] = reply->atom;
+
+		free(reply);
+	}
+
+	return true;
+}
+
 static inline xcb_screen_t* get_screen(struct globox* globox)
 {
 	const xcb_setup_t* setup = xcb_get_setup(globox->x11_conn);
@@ -179,46 +219,6 @@ static inline void buffer_shm(struct globox* globox)
 		0);
 }
 
-static inline bool init_atoms(struct globox* globox)
-{
-	xcb_intern_atom_cookie_t cookie;
-	xcb_intern_atom_reply_t* reply;
-	xcb_generic_error_t* error;
-	char* atoms_names[5] =
-	{
-		"_NET_WM_STATE_MAXIMIZED_HORZ",
-		"_NET_WM_STATE_MAXIMIZED_VERT",
-		"_NET_WM_STATE_FULLSCREEN",
-		"_NET_WM_STATE",
-		"_NET_WM_ICON",
-	};
-
-	for(uint8_t i = 0; i < 5; ++i)
-	{
-		cookie = xcb_intern_atom(
-			globox->x11_conn,
-			0,
-			strlen(atoms_names[i]),
-			atoms_names[i]);
-
-		reply = xcb_intern_atom_reply(
-			globox->x11_conn,
-			cookie,
-			&error);
-
-		if (error != NULL)
-		{
-			return false;
-		}
-
-		globox->x11_atoms[i] = reply->atom;
-
-		free(reply);
-	}
-
-	return true;
-}
-
 bool globox_open_x11(struct globox* globox)
 {
 	// connect to server
@@ -323,9 +323,180 @@ void globox_close_x11(struct globox* globox)
 	xcb_disconnect(globox->x11_conn);
 }
 
-void globox_commit_x11(struct globox* globox)
+// potentially loose all info in the buffer
+static inline bool globox_reserve(
+	struct globox* globox,
+	uint32_t width,
+	uint32_t height)
 {
-	xcb_flush(globox->x11_conn);
+	if (globox->x11_socket)
+	{
+		if ((globox->buf_width * globox->buf_height) < (width * height))
+		{
+			xcb_generic_error_t* error;
+			xcb_randr_get_screen_info_cookie_t screen_cookie;
+			xcb_randr_get_screen_info_reply_t* screen_reply;
+			screen_cookie = xcb_randr_get_screen_info(globox->x11_conn, globox->x11_win);
+			screen_reply = xcb_randr_get_screen_info_reply(globox->x11_conn, screen_cookie, &error);
+
+			if (error != NULL)
+			{
+				return false;
+			}
+
+			xcb_window_t root = screen_reply->root;
+			free(screen_reply);
+
+			xcb_get_geometry_cookie_t win_cookie;
+			xcb_get_geometry_reply_t* win_reply;
+			win_cookie = xcb_get_geometry(globox->x11_conn, root);
+			win_reply = xcb_get_geometry_reply(globox->x11_conn, win_cookie, &error);
+
+			if (error != NULL)
+			{
+				return false;
+			}
+
+			width = (1 + (width / win_reply->width)) * win_reply->width;
+			height = (1 + (height / win_reply->height)) * win_reply->height;
+			free(win_reply);
+
+			globox->buf_width = width;
+			globox->buf_height = height;
+
+			// should be faster than realloc
+			free(globox->rgba);
+			globox->rgba = malloc(4 * width * height);
+		}
+	}
+	else
+	{
+		if ((globox->buf_width * globox->buf_height) != (width * height))
+		{
+			// free
+			xcb_shm_detach(globox->x11_conn, globox->x11_shm.shmseg);
+			shmdt(globox->x11_shm.shmaddr);
+
+			// malloc
+			globox->x11_shm.shmid = shmget(
+				IPC_PRIVATE,
+				4 * width * height,
+				IPC_CREAT | 0600);
+			globox->x11_shm.shmaddr = shmat(globox->x11_shm.shmid, 0, 0);
+
+			xcb_shm_attach(globox->x11_conn, globox->x11_shm.shmseg, globox->x11_shm.shmid, 0);
+			shmctl(globox->x11_shm.shmid, IPC_RMID, 0);
+
+			globox->rgba = (uint32_t*) globox->x11_shm.shmaddr;
+		}
+
+		globox->buf_width = width;
+		globox->buf_height = height;
+	}
+
+	globox->x11_pixmap_update = true;
+
+	return (globox->rgba != NULL);
+}
+
+bool globox_handle_events_x11(struct globox* globox)
+{
+	xcb_generic_event_t* event = xcb_poll_for_event(globox->x11_conn);
+	xcb_expose_event_t* expose = NULL;
+	xcb_configure_notify_event_t* resize = NULL;
+	bool ret = true;
+
+	while ((event != NULL) && ret)
+	{
+		switch (event->response_type & ~0x80)
+		{
+			case XCB_EXPOSE:
+			{
+				if (expose != NULL)
+				{
+					free(expose);
+				}
+
+				expose = (xcb_expose_event_t*) event;
+
+				break;
+			}
+			case XCB_CONFIGURE_NOTIFY:
+			{
+				if (resize != NULL)
+				{
+					free(resize);
+				}
+
+				resize = (xcb_configure_notify_event_t*) event;
+
+				if (expose != NULL)
+				{
+					free(expose);
+					expose = NULL;
+				}
+
+				break;
+			}
+		}
+		event = xcb_poll_for_event(globox->x11_conn);
+	}
+
+	if (resize != NULL)
+	{
+		ret = globox_reserve(globox, resize->width, resize->height);
+		globox->width = resize->width;
+		globox->height = resize->height;
+		globox->x = resize->x;
+		globox->y = resize->y;
+
+		free(resize);
+	}
+
+	if (expose != NULL)
+	{
+		globox_copy_x11(globox,
+			expose->x,
+			expose->y,
+			expose->width,
+			expose->height);
+
+		free(expose);
+	}
+
+	return ret;
+}
+
+inline bool globox_shrink_x11(struct globox* globox)
+{
+	globox->buf_width = globox->width;
+	globox->buf_height = globox->height;
+
+	if (globox->x11_socket)
+	{
+		globox->rgba = realloc(globox->rgba, 4 * globox->width * globox->height);
+	}
+	else
+	{
+		globox->x11_shm.shmid = shmget(
+			IPC_PRIVATE,
+			4 * globox->width * globox->height,
+			IPC_CREAT | 0600);
+		uint8_t* tmpaddr = shmat(globox->x11_shm.shmid, 0, 0);
+
+		xcb_shm_detach(globox->x11_conn, globox->x11_shm.shmseg);
+		xcb_shm_attach(globox->x11_conn, globox->x11_shm.shmseg, globox->x11_shm.shmid, 0);
+
+		shmctl(globox->x11_shm.shmid, IPC_RMID, 0);
+		memcpy((uint32_t*) tmpaddr, globox->rgba, 4 * globox->width * globox->height);
+
+		shmdt(globox->x11_shm.shmaddr);
+		globox->x11_shm.shmaddr = tmpaddr;
+
+		globox->rgba = (uint32_t*) globox->x11_shm.shmaddr;
+	}
+
+	return (globox->rgba != NULL);
 }
 
 void globox_copy_x11(
@@ -426,180 +597,24 @@ void globox_copy_x11(
 	xcb_flush(globox->x11_conn);
 }
 
-// potentially loose all info in the buffer
-static inline bool globox_reserve(
-	struct globox* globox,
-	uint32_t width,
-	uint32_t height)
+void globox_commit_x11(struct globox* globox)
 {
-	if (globox->x11_socket)
-	{
-		if ((globox->buf_width * globox->buf_height) < (width * height))
-		{
-			xcb_generic_error_t* error;
-			xcb_randr_get_screen_info_cookie_t screen_cookie;
-			xcb_randr_get_screen_info_reply_t* screen_reply;
-			screen_cookie = xcb_randr_get_screen_info(globox->x11_conn, globox->x11_win);
-			screen_reply = xcb_randr_get_screen_info_reply(globox->x11_conn, screen_cookie, &error);
-
-			if (error != NULL)
-			{
-				return false;
-			}
-
-			xcb_window_t root = screen_reply->root;
-			free(screen_reply);
-
-			xcb_get_geometry_cookie_t win_cookie;
-			xcb_get_geometry_reply_t* win_reply;
-			win_cookie = xcb_get_geometry(globox->x11_conn, root);
-			win_reply = xcb_get_geometry_reply(globox->x11_conn, win_cookie, &error);
-
-			if (error != NULL)
-			{
-				return false;
-			}
-
-			width = (1 + (width / win_reply->width)) * win_reply->width;
-			height = (1 + (height / win_reply->height)) * win_reply->height;
-			free(win_reply);
-
-			globox->buf_width = width;
-			globox->buf_height = height;
-
-			// should be faster than realloc
-			free(globox->rgba);
-			globox->rgba = malloc(4 * width * height);
-		}
-	}
-	else
-	{
-		if ((globox->buf_width * globox->buf_height) != (width * height))
-		{
-			// free
-			xcb_shm_detach(globox->x11_conn, globox->x11_shm.shmseg);
-			shmdt(globox->x11_shm.shmaddr);
-
-			// malloc
-			globox->x11_shm.shmid = shmget(
-				IPC_PRIVATE,
-				4 * width * height,
-				IPC_CREAT | 0600);
-			globox->x11_shm.shmaddr = shmat(globox->x11_shm.shmid, 0, 0);
-
-			xcb_shm_attach(globox->x11_conn, globox->x11_shm.shmseg, globox->x11_shm.shmid, 0);
-			shmctl(globox->x11_shm.shmid, IPC_RMID, 0);
-
-			globox->rgba = (uint32_t*) globox->x11_shm.shmaddr;
-		}
-
-		globox->buf_width = width;
-		globox->buf_height = height;
-	}
-
-	globox->x11_pixmap_update = true;
-
-	return (globox->rgba != NULL);
+	xcb_flush(globox->x11_conn);
 }
 
-inline bool globox_shrink_x11(struct globox* globox)
+void globox_set_icon_x11(struct globox* globox, uint32_t* pixmap, uint32_t len)
 {
-	globox->buf_width = globox->width;
-	globox->buf_height = globox->height;
+	xcb_change_property(
+		globox->x11_conn,
+		XCB_PROP_MODE_REPLACE,
+		globox->x11_win,
+		globox->x11_atoms[ATOM_ICON],
+		XCB_ATOM_CARDINAL,
+		32,
+		len,
+		pixmap);
 
-	if (globox->x11_socket)
-	{
-		globox->rgba = realloc(globox->rgba, 4 * globox->width * globox->height);
-	}
-	else
-	{
-		globox->x11_shm.shmid = shmget(
-			IPC_PRIVATE,
-			4 * globox->width * globox->height,
-			IPC_CREAT | 0600);
-		uint8_t* tmpaddr = shmat(globox->x11_shm.shmid, 0, 0);
-
-		xcb_shm_detach(globox->x11_conn, globox->x11_shm.shmseg);
-		xcb_shm_attach(globox->x11_conn, globox->x11_shm.shmseg, globox->x11_shm.shmid, 0);
-
-		shmctl(globox->x11_shm.shmid, IPC_RMID, 0);
-		memcpy((uint32_t*) tmpaddr, globox->rgba, 4 * globox->width * globox->height);
-
-		shmdt(globox->x11_shm.shmaddr);
-		globox->x11_shm.shmaddr = tmpaddr;
-
-		globox->rgba = (uint32_t*) globox->x11_shm.shmaddr;
-	}
-
-	return (globox->rgba != NULL);
-}
-
-bool globox_handle_events_x11(struct globox* globox)
-{
-	xcb_generic_event_t* event = xcb_poll_for_event(globox->x11_conn);
-	xcb_expose_event_t* expose = NULL;
-	xcb_configure_notify_event_t* resize = NULL;
-	bool ret = true;
-
-	while ((event != NULL) && ret)
-	{
-		switch (event->response_type & ~0x80)
-		{
-			case XCB_EXPOSE:
-			{
-				if (expose != NULL)
-				{
-					free(expose);
-				}
-
-				expose = (xcb_expose_event_t*) event;
-
-				break;
-			}
-			case XCB_CONFIGURE_NOTIFY:
-			{
-				if (resize != NULL)
-				{
-					free(resize);
-				}
-
-				resize = (xcb_configure_notify_event_t*) event;
-
-				if (expose != NULL)
-				{
-					free(expose);
-					expose = NULL;
-				}
-
-				break;
-			}
-		}
-		event = xcb_poll_for_event(globox->x11_conn);
-	}
-
-	if (resize != NULL)
-	{
-		ret = globox_reserve(globox, resize->width, resize->height);
-		globox->width = resize->width;
-		globox->height = resize->height;
-		globox->x = resize->x;
-		globox->y = resize->y;
-
-		free(resize);
-	}
-
-	if (expose != NULL)
-	{
-		globox_copy_x11(globox,
-			expose->x,
-			expose->y,
-			expose->width,
-			expose->height);
-
-		free(expose);
-	}
-
-	return ret;
+	xcb_flush(globox->x11_conn);
 }
 
 void globox_set_title_x11(struct globox* globox, const char* title)
@@ -717,21 +732,6 @@ void globox_set_visible_x11(struct globox* globox, bool visible)
 	}
 
 	globox->x11_visible = visible;
-}
-
-void globox_set_icon_x11(struct globox* globox, uint32_t* pixmap, uint32_t len)
-{
-	xcb_change_property(
-		globox->x11_conn,
-		XCB_PROP_MODE_REPLACE,
-		globox->x11_win,
-		globox->x11_atoms[ATOM_ICON],
-		XCB_ATOM_CARDINAL,
-		32,
-		len,
-		pixmap);
-
-	xcb_flush(globox->x11_conn);
 }
 
 #endif
