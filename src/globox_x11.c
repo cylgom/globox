@@ -582,6 +582,8 @@ bool globox_handle_events_x11(struct globox* globox)
 		ret = globox_reserve(globox, resize->width, resize->height);
 		globox->width = resize->width;
 		globox->height = resize->height;
+		globox->x = resize->x;
+		globox->y = resize->y;
 
 		free(resize);
 	}
