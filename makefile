@@ -2,11 +2,7 @@ NAME = globox
 CC = gcc
 FLAGS = -std=c99 -pedantic -g
 FLAGS+= -Wall -Wno-unused-parameter -Wextra -Werror=vla -Werror
-FLAGS+= -DGLOBOX_X11
-#FLAGS+= -DGLOBOX_WAYLAND
 VALGRIND = --show-leak-kinds=all --track-origins=yes --leak-check=full
-LINK = -lxcb -lxcb-shm -lxcb-randr
-#LINK+= -lwayland-client -lrt
 CMD = ./$(NAME)
 
 BIND = bin
@@ -18,20 +14,37 @@ RESD = res
 
 INCL = -I$(SRCD)
 INCL+= -I$(INCD)
-
 SRCS = $(SRCD)/main.c
 SRCS+= $(SRCD)/globox.c
-SRCS+= $(SRCD)/globox_x11.c
-#SRCS+= $(SRCD)/globox_wayland.c
-#SRCS+= $(INCD)/xdg-shell-protocol.c
 
-SRCS_OBJS := $(patsubst %.c,$(OBJD)/%.o,$(SRCS))
-SRCS_OBJS += $(OBJD)/$(RESD)/iconpix.o
+# wayland
+ifeq ($(BACKEND), wayland)
 
-# aliases
+FLAGS+= -DGLOBOX_WAYLAND
+SRCS+= $(SRCD)/globox_wayland.c
+SRCS+= $(INCD)/xdg-shell-protocol.c
+LINK = -lwayland-client -lrt
+
 .PHONY: final
-final: $(INCD) $(BIND)/$(NAME)
+final: | $(INCD) $(BIND)/$(NAME)
 
+# x11
+else
+
+FLAGS+= -DGLOBOX_X11
+SRCS+= $(SRCD)/globox_x11.c
+SRCS_OBJS = $(OBJD)/$(RESD)/iconpix.o
+LINK = -lxcb -lxcb-shm -lxcb-randr
+
+.PHONY: final
+final: $(BIND)/$(NAME)
+
+endif
+
+# objects listing
+SRCS_OBJS+= $(patsubst %.c,$(OBJD)/%.o,$(SRCS))
+
+# wayland
 $(INCD):
 	@echo "generating wayland protocol extensions source files"
 	@mkdir $@
@@ -42,6 +55,7 @@ $(INCD):
 	< /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml \
 	> $@/xdg-shell-client-protocol.h
 
+# x11
 $(RESD)/iconpix.bin:
 	@echo "generating icons pixmap"
 	@cd $(RESD) && ./makepix.sh
