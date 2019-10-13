@@ -24,7 +24,7 @@ bool globox_open(
 	globox->buf_height = height;
 
 #ifdef GLOBOX_X11
-	return globox_open_x11(globox);
+	return globox_open_x11(globox, title);
 #endif
 }
 
@@ -116,4 +116,33 @@ bool globox_set_size(struct globox* globox, uint32_t width, uint32_t height)
 	globox->height = height;
 
 	return ret;
+}
+
+// getters
+char* globox_get_title(struct globox* globox)
+{
+#ifdef GLOBOX_X11
+	return globox_get_title_x11(globox);
+#endif
+}
+
+enum globox_state globox_get_state(struct globox* globox)
+{
+#ifdef GLOBOX_X11
+	return globox_get_state_x11(globox);
+#endif
+}
+
+void globox_get_pos(struct globox* globox, int32_t* x, int32_t* y)
+{
+#ifdef GLOBOX_X11
+	globox_get_pos_x11(globox, x, y);
+#endif
+}
+
+void globox_get_size(struct globox* globox, uint32_t* width, uint32_t* height)
+{
+#ifdef GLOBOX_X11
+	globox_get_size_x11(globox, width, height);
+#endif
 }

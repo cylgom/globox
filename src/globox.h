@@ -44,7 +44,7 @@ struct globox
 	bool x11_pixmap_update;
 	bool x11_visible;
 
-	xcb_atom_t x11_atoms[4];
+	xcb_atom_t x11_atoms[6];
 #endif
 };
 

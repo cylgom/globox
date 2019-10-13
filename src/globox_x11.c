@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #ifdef GLOBOX_X11
 
 #include "globox_x11.h"
@@ -18,8 +19,10 @@ enum x11_atom_types
 	ATOM_STATE_MAXIMIZED_HORZ = 0,
 	ATOM_STATE_MAXIMIZED_VERT,
 	ATOM_STATE_FULLSCREEN,
+	ATOM_STATE_HIDDEN,
 	ATOM_STATE,
 	ATOM_ICON,
+	ATOM_COUNT // used to get size
 };
 
 static inline bool init_atoms(struct globox* globox)
@@ -27,16 +30,17 @@ static inline bool init_atoms(struct globox* globox)
 	xcb_intern_atom_cookie_t cookie;
 	xcb_intern_atom_reply_t* reply;
 	xcb_generic_error_t* error;
-	char* atoms_names[5] =
+	char* atoms_names[ATOM_COUNT] =
 	{
 		"_NET_WM_STATE_MAXIMIZED_HORZ",
 		"_NET_WM_STATE_MAXIMIZED_VERT",
 		"_NET_WM_STATE_FULLSCREEN",
+		"_NET_WM_STATE_HIDDEN",
 		"_NET_WM_STATE",
 		"_NET_WM_ICON",
 	};
 
-	for(uint8_t i = 0; i < 5; ++i)
+	for(uint8_t i = 0; i < ATOM_COUNT; ++i)
 	{
 		cookie = xcb_intern_atom(
 			globox->x11_conn,
@@ -51,6 +55,8 @@ static inline bool init_atoms(struct globox* globox)
 
 		if (error != NULL)
 		{
+			free(reply);
+
 			return false;
 		}
 
@@ -81,7 +87,9 @@ static inline void create_window(struct globox* globox, xcb_screen_t* screen)
 	uint32_t values[2] =
 	{
 		XCB_BACK_PIXMAP_NONE,
-		XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_STRUCTURE_NOTIFY,
+		XCB_EVENT_MASK_EXPOSURE
+		| XCB_EVENT_MASK_STRUCTURE_NOTIFY
+		| XCB_EVENT_MASK_PROPERTY_CHANGE,
 	};
 
 	globox->x11_win = xcb_generate_id(globox->x11_conn);
@@ -219,7 +227,7 @@ static inline void buffer_shm(struct globox* globox)
 		0);
 }
 
-inline bool globox_open_x11(struct globox* globox)
+inline bool globox_open_x11(struct globox* globox, const char* title)
 {
 	// connect to server
 	globox->x11_conn = xcb_connect(NULL, &(globox->x11_screen));
@@ -299,6 +307,9 @@ inline bool globox_open_x11(struct globox* globox)
 		return false;
 	}
 
+	globox->title = NULL;
+	globox_set_title_x11(globox, title);
+
 	return true;
 }
 
@@ -317,6 +328,7 @@ inline void globox_close_x11(struct globox* globox)
 		xcb_destroy_window(globox->x11_conn, globox->x11_win);
 	}
 
+	free(globox->title);
 	xcb_disconnect(globox->x11_conn);
 }
 
@@ -338,6 +350,8 @@ static inline bool globox_reserve(
 
 			if (error != NULL)
 			{
+				free(screen_reply);
+
 				return false;
 			}
 
@@ -351,6 +365,8 @@ static inline bool globox_reserve(
 
 			if (error != NULL)
 			{
+				free(win_reply);
+
 				return false;
 			}
 
@@ -396,11 +412,105 @@ static inline bool globox_reserve(
 	return (globox->rgba != NULL);
 }
 
+static inline void handle_title(struct globox* globox)
+{
+	// update internal title
+	xcb_generic_error_t* error = NULL;
+	xcb_get_property_cookie_t cookie;
+	xcb_get_property_reply_t* reply;
+	char* value;
+
+	cookie = xcb_get_property(
+		globox->x11_conn,
+		0,
+		globox->x11_win,
+		XCB_ATOM_WM_NAME,
+		XCB_ATOM_STRING,
+		0,
+		32);
+
+	reply = xcb_get_property_reply(
+		globox->x11_conn,
+		cookie,
+		&error);
+
+	if (error == NULL)
+	{
+		value = (char*) xcb_get_property_value(reply);
+
+		if (value != NULL)
+		{
+			globox_set_title_x11(globox, value);
+		}
+	}
+
+	free(reply);
+}
+
+static inline void handle_state(struct globox* globox)
+{
+	xcb_generic_error_t* error = NULL;
+	xcb_get_property_cookie_t cookie;
+	xcb_get_property_reply_t* reply;
+	xcb_atom_t* value;
+
+	cookie = xcb_get_property(
+		globox->x11_conn,
+		0,
+		globox->x11_win,
+		globox->x11_atoms[ATOM_STATE],
+		XCB_ATOM_ATOM,
+		0,
+		32);
+
+	reply = xcb_get_property_reply(
+		globox->x11_conn,
+		cookie,
+		&error);
+
+	if (error != NULL)
+	{
+		free(reply);
+
+		return;
+	}
+
+	value = (xcb_atom_t*) xcb_get_property_value(reply);
+
+	if (value == NULL)
+	{
+		free(reply);
+
+		return;
+	}
+
+	if (*value == globox->x11_atoms[ATOM_STATE_FULLSCREEN])
+	{
+		globox->state = GLOBOX_STATE_FULLSCREEN;
+	}
+	else if ((*value == globox->x11_atoms[ATOM_STATE_MAXIMIZED_VERT])
+		|| (*value == globox->x11_atoms[ATOM_STATE_MAXIMIZED_HORZ]))
+	{
+		globox->state = GLOBOX_STATE_MAXIMIZED;
+	}
+	else if (*value == globox->x11_atoms[ATOM_STATE_HIDDEN])
+	{
+		globox->state = GLOBOX_STATE_MINIMIZED;
+	}
+	else
+	{
+		globox->state = GLOBOX_STATE_REGULAR;
+	}
+
+	free(reply);
+}
+
 inline bool globox_handle_events_x11(struct globox* globox)
 {
 	xcb_generic_event_t* event = xcb_poll_for_event(globox->x11_conn);
 	xcb_expose_event_t* expose = NULL;
 	xcb_configure_notify_event_t* resize = NULL;
+	xcb_property_notify_event_t* state = NULL;
 	bool ret = true;
 
 	while ((event != NULL) && ret)
@@ -435,7 +545,24 @@ inline bool globox_handle_events_x11(struct globox* globox)
 
 				break;
 			}
+			case XCB_PROPERTY_NOTIFY:
+			{
+				if (state == NULL)
+				{
+					state = (xcb_property_notify_event_t*) event;
+
+					if ((state->atom != globox->x11_atoms[ATOM_STATE])
+						&& (state->atom != XCB_ATOM_WM_NAME))
+					{
+						free(state);
+						state = NULL;
+					}
+				}
+
+				break;
+			}
 		}
+
 		event = xcb_poll_for_event(globox->x11_conn);
 	}
 
@@ -459,6 +586,14 @@ inline bool globox_handle_events_x11(struct globox* globox)
 			expose->height);
 
 		free(expose);
+	}
+
+	if (state != NULL)
+	{
+		handle_title(globox);
+		handle_state(globox);
+
+		free(state);
 	}
 
 	return ret;
@@ -616,6 +751,13 @@ inline void globox_set_icon_x11(struct globox* globox, uint32_t* pixmap, uint32_
 
 inline void globox_set_title_x11(struct globox* globox, const char* title)
 {
+	if (globox->title != NULL)
+	{
+		free(globox->title);
+	}
+
+	globox->title = strdup(title);
+
 	xcb_change_property(
 		globox->x11_conn,
 		XCB_PROP_MODE_REPLACE,
@@ -727,6 +869,28 @@ inline bool globox_set_size_x11(struct globox* globox, uint32_t width, uint32_t 
 	}
 
 	return ret;
+}
+
+inline char* globox_get_title_x11(struct globox* globox)
+{
+	return globox->title;
+}
+
+inline enum globox_state globox_get_state_x11(struct globox* globox)
+{
+	return globox->state;
+}
+
+inline void globox_get_pos_x11(struct globox* globox, int32_t* x, int32_t* y)
+{
+	*x = globox->x;
+	*y = globox->y;
+}
+
+inline void globox_get_size_x11(struct globox* globox, uint32_t* width, uint32_t* height)
+{
+	*width = globox->width;
+	*height = globox->height;
 }
 
 #endif
