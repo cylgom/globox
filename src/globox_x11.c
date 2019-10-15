@@ -533,7 +533,14 @@ inline bool globox_handle_events_x11(struct globox* globox)
 					free(expose);
 				}
 
-				expose = (xcb_expose_event_t*) event;
+				if (resize == NULL)
+				{
+					expose = (xcb_expose_event_t*) event;
+				}
+				else
+				{
+					free(event);
+				}
 
 				break;
 			}
@@ -567,6 +574,12 @@ inline bool globox_handle_events_x11(struct globox* globox)
 						state = NULL;
 					}
 				}
+
+				break;
+			}
+			default:
+			{
+				free(event);
 
 				break;
 			}
