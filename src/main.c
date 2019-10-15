@@ -139,16 +139,19 @@ int main()
 		struct timeval chrono_struct;
 		uint64_t new;
 		uint64_t old;
+		uint64_t frame;
 
 		gettimeofday(&chrono_struct, NULL);
-		new = (uint64_t) chrono_struct.tv_sec;
+		new = ((uint64_t) chrono_struct.tv_sec) * 1000000
+			+ (uint64_t) chrono_struct.tv_sec;
 		old = new;
 
 		uint32_t old_width = ctx.width;
 		uint32_t old_height = ctx.height;
 
-		while ((new - old) < 10)
+		while ((new - old) < 60000000)
 		{
+			frame = new;
 			globox_handle_events(&ctx);
 
 			if ((ctx.width != old_width) || (ctx.height != old_height))
@@ -176,7 +179,13 @@ int main()
 			}
 
 			gettimeofday(&chrono_struct, NULL);
-			new = (uint64_t) chrono_struct.tv_sec;
+			new = ((uint64_t) chrono_struct.tv_sec) * 1000000
+				+ (uint64_t) chrono_struct.tv_sec;
+
+			if ((new - frame) < 10000)
+			{
+				usleep((10000 - new + frame) / 1000);
+			}
 		}
 
 		globox_close(&ctx);
