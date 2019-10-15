@@ -75,7 +75,7 @@ $(OBJD)/%.o: %.c
 	@$(CC) $(INCL) $(FLAGS) -c -o $@ $<
 
 # final executable
-$(BIND)/$(NAME): $(SRCS_OBJS) $(FINAL_OBJS)
+$(BIND)/$(NAME): $(SRCS_OBJS)
 	@echo "compiling executable $@"
 	@mkdir -p $(@D)
 	@$(CC) -o $@ $^ $(LINK)
