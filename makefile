@@ -17,19 +17,8 @@ INCL+= -I$(INCD)
 SRCS = $(SRCD)/main.c
 SRCS+= $(SRCD)/globox.c
 
-# wayland
-ifeq ($(BACKEND), wayland)
-
-FLAGS+= -DGLOBOX_WAYLAND
-SRCS+= $(SRCD)/globox_wayland.c
-SRCS+= $(INCD)/xdg-shell-protocol.c
-LINK = -lwayland-client -lrt
-
-.PHONY: final
-final: | $(INCD) $(BIND)/$(NAME)
-
 # x11
-else
+ifeq ($(BACKEND), x11)
 
 FLAGS+= -DGLOBOX_X11
 SRCS+= $(SRCD)/globox_x11.c
@@ -38,6 +27,17 @@ LINK = -lxcb -lxcb-shm -lxcb-randr
 
 .PHONY: final
 final: $(BIND)/$(NAME)
+
+# wayland
+else
+
+FLAGS+= -DGLOBOX_WAYLAND
+SRCS+= $(SRCD)/globox_wayland.c
+SRCS+= $(INCD)/xdg-shell-protocol.c
+LINK = -lwayland-client -lrt
+
+.PHONY: final
+final: | $(INCD) $(BIND)/$(NAME)
 
 endif
 
