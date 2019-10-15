@@ -25,6 +25,7 @@ enum x11_atom_types
 	ATOM_COUNT // used to get size
 };
 
+// get access to _NET_WM atoms without using ewmh
 static inline bool init_atoms(struct globox* globox)
 {
 	xcb_intern_atom_cookie_t cookie;
@@ -82,6 +83,8 @@ static inline xcb_screen_t* get_screen(struct globox* globox)
 	return iter.data;
 }
 
+// we use a pixmap background instead of a plain color
+// to work around resizing artifacts on some desktop environments
 static inline void create_window(struct globox* globox, xcb_screen_t* screen)
 {
 	uint32_t values[2] =
@@ -130,6 +133,7 @@ static inline void create_gfx(struct globox* globox, xcb_screen_t* screen)
 		values);
 }
 
+// check if the given screen offers a compatible mode
 static inline bool visual_compatible(struct globox* globox, xcb_screen_t* screen)
 {
 	xcb_visualtype_t* visual = NULL;
@@ -171,6 +175,7 @@ static inline bool visual_compatible(struct globox* globox, xcb_screen_t* screen
 	return false;
 }
 
+// classic pixmap allocation based on malloc
 static inline bool buffer_socket(struct globox* globox)
 {
 	// transfer the data using a socket
@@ -197,6 +202,7 @@ static inline bool buffer_socket(struct globox* globox)
 	return true;
 }
 
+// better buffer allocation based on shared-memory
 static inline void buffer_shm(struct globox* globox)
 {
 	// create the shared memory buffer
@@ -332,7 +338,7 @@ inline void globox_close_x11(struct globox* globox)
 	xcb_disconnect(globox->x11_conn);
 }
 
-// potentially loose all info in the buffer
+// will loose all buffer information when resizing
 static inline bool globox_reserve(
 	struct globox* globox,
 	uint32_t width,
@@ -412,6 +418,7 @@ static inline bool globox_reserve(
 	return (globox->rgba != NULL);
 }
 
+// updates the internal title to reflect the actual window title
 static inline void handle_title(struct globox* globox)
 {
 	// update internal title
@@ -447,6 +454,7 @@ static inline void handle_title(struct globox* globox)
 	free(reply);
 }
 
+// updates the internal state to reflect the actual window state
 static inline void handle_state(struct globox* globox)
 {
 	xcb_generic_error_t* error = NULL;
@@ -505,6 +513,7 @@ static inline void handle_state(struct globox* globox)
 	free(reply);
 }
 
+// event queue processor with smart skipping for resizing and moving operations
 inline bool globox_handle_events_x11(struct globox* globox)
 {
 	xcb_generic_event_t* event = xcb_poll_for_event(globox->x11_conn);
@@ -631,6 +640,8 @@ inline bool globox_shrink_x11(struct globox* globox)
 	return (globox->rgba != NULL);
 }
 
+// draw a part of the buffer on the screen
+// re-allocate the pixmap here to avoid artifacts
 inline void globox_copy_x11(
 	struct globox* globox,
 	int32_t x,
@@ -734,6 +745,7 @@ inline void globox_commit_x11(struct globox* globox)
 	xcb_flush(globox->x11_conn);
 }
 
+// direct icon change
 inline void globox_set_icon_x11(struct globox* globox, uint32_t* pixmap, uint32_t len)
 {
 	xcb_change_property(
@@ -749,6 +761,7 @@ inline void globox_set_icon_x11(struct globox* globox, uint32_t* pixmap, uint32_
 	xcb_flush(globox->x11_conn);
 }
 
+// direct title change
 inline void globox_set_title_x11(struct globox* globox, const char* title)
 {
 	if (globox->title != NULL)
@@ -769,6 +782,8 @@ inline void globox_set_title_x11(struct globox* globox, const char* title)
 		title);
 }
 
+// ask the server to change the window state
+//
 // there is a bug in ewmh that prevents fullscreen from working properly
 // since keeping xcb-ewmh around only for initialization would be kind
 // of silly we removed the dependency and used raw xcb all the way
@@ -797,6 +812,8 @@ static void set_state(
 		(const char*)(&ev));
 }
 
+// window states are really just "flags" for the server and can be combined
+// because of this we need to set each relevant "flag" when changing state
 inline void globox_set_state_x11(struct globox* globox, enum globox_state state)
 {
 	switch (state)
@@ -842,6 +859,7 @@ inline void globox_set_state_x11(struct globox* globox, enum globox_state state)
 	globox->state = state;
 }
 
+// ask the server to move the window
 inline void globox_set_pos_x11(struct globox* globox, uint32_t x, uint32_t y)
 {
 	uint32_t values[2] = {x, y};
@@ -853,10 +871,15 @@ inline void globox_set_pos_x11(struct globox* globox, uint32_t x, uint32_t y)
 		values);
 }
 
+// ask the server to resize the window
 inline bool globox_set_size_x11(struct globox* globox, uint32_t width, uint32_t height)
 {
 	uint32_t values[2] = {width, height};
 
+	// we know the window will be resized so we can
+	// execute globox_reserve now to try to allocate
+	// the required resources as soon as possible and
+	// reduce artifacts on weird desktop environments
 	bool ret = globox_reserve(globox, width, height);
 
 	if (ret)
