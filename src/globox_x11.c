@@ -14,6 +14,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define EXPOSE_QUEUE_LEN 10
+
 enum x11_atom_types
 {
 	ATOM_STATE_MAXIMIZED_HORZ = 0,
@@ -513,6 +515,19 @@ static inline void handle_state(struct globox* globox)
 	free(reply);
 }
 
+static inline void handle_expose(struct globox* globox, uint32_t* arr, uint8_t cur)
+{
+	for (uint8_t i = 0; i < cur; ++i)
+	{
+		globox_copy_x11(
+			globox,
+			arr[(4 * i) + 0],
+			arr[(4 * i) + 1],
+			arr[(4 * i) + 2],
+			arr[(4 * i) + 3]);
+	}
+}
+
 // event queue processor with smart skipping for resizing and moving operations
 inline bool globox_handle_events_x11(struct globox* globox)
 {
@@ -522,6 +537,9 @@ inline bool globox_handle_events_x11(struct globox* globox)
 	xcb_property_notify_event_t* state = NULL;
 	bool redraw = false;
 	bool ret = true;
+
+	uint32_t queue[4 * EXPOSE_QUEUE_LEN];
+	uint8_t cur = 0;
 
 	while ((event != NULL) && ret)
 	{
@@ -533,11 +551,17 @@ inline bool globox_handle_events_x11(struct globox* globox)
 
 				if (!redraw)
 				{
-					globox_copy_x11(globox,
-						expose->x,
-						expose->y,
-						expose->width,
-						expose->height);
+					if (cur >= EXPOSE_QUEUE_LEN)
+					{
+						handle_expose(globox, queue, EXPOSE_QUEUE_LEN);
+						cur = 0;
+					}
+
+					queue[(4 * cur) + 0] = expose->x;
+					queue[(4 * cur) + 1] = expose->y;
+					queue[(4 * cur) + 2] = expose->width;
+					queue[(4 * cur) + 3] = expose->height;
+					++cur;
 				}
 
 				free(expose);
@@ -556,6 +580,7 @@ inline bool globox_handle_events_x11(struct globox* globox)
 				if (!redraw && ((resize->width != globox->width) || (resize->height != globox->height)))
 				{
 					redraw = true;
+					cur = 0;
 				}
 
 				break;
@@ -602,6 +627,11 @@ inline bool globox_handle_events_x11(struct globox* globox)
 		globox->y = resize->y;
 
 		free(resize);
+	}
+
+	if (cur > 0)
+	{
+		handle_expose(globox, queue, cur);
 	}
 
 	if (state != NULL)
