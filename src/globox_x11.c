@@ -520,6 +520,7 @@ inline bool globox_handle_events_x11(struct globox* globox)
 	xcb_expose_event_t* expose = NULL;
 	xcb_configure_notify_event_t* resize = NULL;
 	xcb_property_notify_event_t* state = NULL;
+	bool redraw = false;
 	bool ret = true;
 
 	while ((event != NULL) && ret)
@@ -528,19 +529,18 @@ inline bool globox_handle_events_x11(struct globox* globox)
 		{
 			case XCB_EXPOSE:
 			{
-				if (expose != NULL)
+				expose = (xcb_expose_event_t*) event;
+
+				if (!redraw)
 				{
-					free(expose);
+					globox_copy_x11(globox,
+						expose->x,
+						expose->y,
+						expose->width,
+						expose->height);
 				}
 
-				if (resize == NULL)
-				{
-					expose = (xcb_expose_event_t*) event;
-				}
-				else
-				{
-					free(event);
-				}
+				free(expose);
 
 				break;
 			}
@@ -553,10 +553,9 @@ inline bool globox_handle_events_x11(struct globox* globox)
 
 				resize = (xcb_configure_notify_event_t*) event;
 
-				if (expose != NULL)
+				if (!redraw && ((resize->width != globox->width) || (resize->height != globox->height)))
 				{
-					free(expose);
-					expose = NULL;
+					redraw = true;
 				}
 
 				break;
@@ -590,24 +589,18 @@ inline bool globox_handle_events_x11(struct globox* globox)
 
 	if (resize != NULL)
 	{
-		ret = globox_reserve(globox, resize->width, resize->height);
-		globox->width = resize->width;
-		globox->height = resize->height;
+		if (redraw)
+		{
+			ret = globox_reserve(globox, resize->width, resize->height);
+
+			globox->width = resize->width;
+			globox->height = resize->height;
+		}
+
 		globox->x = resize->x;
 		globox->y = resize->y;
 
 		free(resize);
-	}
-
-	if (expose != NULL)
-	{
-		globox_copy_x11(globox,
-			expose->x,
-			expose->y,
-			expose->width,
-			expose->height);
-
-		free(expose);
 	}
 
 	if (state != NULL)
