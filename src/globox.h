@@ -32,7 +32,7 @@ struct globox
 	uint32_t height;
 	uint32_t buf_width;
 	uint32_t buf_height;
-	uint32_t* rgba;
+	uint32_t* argb;
 
 	char* title;
 	enum globox_state state;

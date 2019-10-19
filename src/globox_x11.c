@@ -181,9 +181,9 @@ static inline bool buffer_socket(struct globox* globox)
 	// transfer the data using a socket
 	globox->x11_socket = true;
 	// I have some bad news
-	globox->rgba = (uint32_t*) malloc(4 * globox->width * globox->height);
+	globox->argb = (uint32_t*) malloc(4 * globox->width * globox->height);
 
-	if (globox->rgba == NULL)
+	if (globox->argb == NULL)
 	{
 		return false;
 	}
@@ -219,7 +219,7 @@ static inline void buffer_shm(struct globox* globox)
 
 	shmctl(globox->x11_shm.shmid, IPC_RMID, 0);
 
-	globox->rgba = (uint32_t*) globox->x11_shm.shmaddr;
+	globox->argb = (uint32_t*) globox->x11_shm.shmaddr;
 
 	// create pixmap with window depth
 	xcb_shm_create_pixmap(
@@ -323,7 +323,7 @@ inline void globox_close_x11(struct globox* globox)
 {
 	if (globox->x11_socket)
 	{
-		free(globox->rgba);
+		free(globox->argb);
 		xcb_free_pixmap(globox->x11_conn, globox->x11_pix);
 	}
 	else
@@ -384,8 +384,8 @@ static inline bool globox_reserve(
 			globox->buf_height = height;
 
 			// should be faster than realloc
-			free(globox->rgba);
-			globox->rgba = malloc(4 * width * height);
+			free(globox->argb);
+			globox->argb = malloc(4 * width * height);
 		}
 	}
 	else
@@ -406,7 +406,7 @@ static inline bool globox_reserve(
 			xcb_shm_attach(globox->x11_conn, globox->x11_shm.shmseg, globox->x11_shm.shmid, 0);
 			shmctl(globox->x11_shm.shmid, IPC_RMID, 0);
 
-			globox->rgba = (uint32_t*) globox->x11_shm.shmaddr;
+			globox->argb = (uint32_t*) globox->x11_shm.shmaddr;
 		}
 
 		globox->buf_width = width;
@@ -415,7 +415,7 @@ static inline bool globox_reserve(
 
 	globox->x11_pixmap_update = true;
 
-	return (globox->rgba != NULL);
+	return (globox->argb != NULL);
 }
 
 // updates the internal title to reflect the actual window title
@@ -628,7 +628,7 @@ inline bool globox_shrink_x11(struct globox* globox)
 
 	if (globox->x11_socket)
 	{
-		globox->rgba = realloc(globox->rgba, 4 * globox->width * globox->height);
+		globox->argb = realloc(globox->argb, 4 * globox->width * globox->height);
 	}
 	else
 	{
@@ -642,15 +642,15 @@ inline bool globox_shrink_x11(struct globox* globox)
 		xcb_shm_attach(globox->x11_conn, globox->x11_shm.shmseg, globox->x11_shm.shmid, 0);
 
 		shmctl(globox->x11_shm.shmid, IPC_RMID, 0);
-		memcpy((uint32_t*) tmpaddr, globox->rgba, 4 * globox->width * globox->height);
+		memcpy((uint32_t*) tmpaddr, globox->argb, 4 * globox->width * globox->height);
 
 		shmdt(globox->x11_shm.shmaddr);
 		globox->x11_shm.shmaddr = tmpaddr;
 
-		globox->rgba = (uint32_t*) globox->x11_shm.shmaddr;
+		globox->argb = (uint32_t*) globox->x11_shm.shmaddr;
 	}
 
-	return (globox->rgba != NULL);
+	return (globox->argb != NULL);
 }
 
 // draw a part of the buffer on the screen
@@ -702,7 +702,7 @@ inline void globox_copy_x11(
 					0,
 					24,
 					4 * globox->width * rows_batch,
-					(void*) (globox->rgba + (y2 * globox->width)));
+					(void*) (globox->argb + (y2 * globox->width)));
 
 				y2 += rows_batch;
 				height2 -= rows_batch;
@@ -721,7 +721,7 @@ inline void globox_copy_x11(
 			0,
 			24,
 			4 * globox->width * height2,
-			(void*) (globox->rgba + (y2 * globox->width)));
+			(void*) (globox->argb + (y2 * globox->width)));
 	}
 	else if (globox->x11_pixmap_update)
 	{

@@ -37,7 +37,7 @@ int main()
 		for (int i = 0; i < (100 * 100); ++i)
 		{
 			usleep(1000);
-			ctx.rgba[i] = 0xFFFFFFFF;
+			ctx.argb[i] = 0x00FFFFFF;
 			globox_copy(&ctx, 10, 10, 80, 80);
 			globox_commit(&ctx);
 		}
@@ -109,7 +109,7 @@ int main()
 		for (int i = 0; i < (100 * 100); ++i)
 		{
 			pos = ((i / 100) * ctx.width) + (i % 100);
-			ctx.rgba[pos] = 0xFFFFFFFF;
+			ctx.argb[pos] = 0x00FFFFFF;
 		}
 
 		globox_copy(&ctx, 10, 10, 80, 80);
@@ -160,7 +160,7 @@ int main()
 				// background
 				for (uint32_t i = 0; i < ctx.height * ctx.width; ++i)
 				{
-					ctx.rgba[i] = 0x88888888;
+					ctx.argb[i] = 0x00888888;
 				}
 
 				// square
@@ -171,7 +171,7 @@ int main()
 					pos = ((ctx.height / 2) - 50 + (i / 100)) * ctx.width
 						+ (ctx.width / 2) - 50 + (i % 100);
 
-					ctx.rgba[pos] = 0xFFFFFFFF;
+					ctx.argb[pos] = 0x00FFFFFF;
 				}
 
 				globox_copy(&ctx, 0, 0, ctx.width, ctx.height);
