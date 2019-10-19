@@ -593,6 +593,7 @@ inline bool globox_handle_events_x11(struct globox* globox)
 		{
 			ret = globox_reserve(globox, resize->width, resize->height);
 
+			globox->redraw = true;
 			globox->width = resize->width;
 			globox->height = resize->height;
 		}
@@ -744,6 +745,7 @@ inline void globox_copy_x11(
 		height);
 
 	xcb_flush(globox->x11_conn);
+	globox->redraw = false;
 }
 
 inline void globox_commit_x11(struct globox* globox)

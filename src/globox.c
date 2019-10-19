@@ -26,6 +26,7 @@ bool globox_open(
 	globox->height = height;
 	globox->buf_width = width;
 	globox->buf_height = height;
+	globox->redraw = true;
 
 #ifdef GLOBOX_X11
 	return globox_open_x11(globox, title);

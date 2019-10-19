@@ -147,15 +147,12 @@ int main()
 			+ (uint64_t) chrono_struct.tv_sec;
 		old = new;
 
-		uint32_t old_width = ctx.width;
-		uint32_t old_height = ctx.height;
-
 		while ((new - old) < 60000000)
 		{
 			frame = new;
 			globox_handle_events(&ctx);
 
-			if ((ctx.width != old_width) || (ctx.height != old_height))
+			if (ctx.redraw)
 			{
 				// background
 				for (uint32_t i = 0; i < ctx.height * ctx.width; ++i)
@@ -175,8 +172,6 @@ int main()
 				}
 
 				globox_copy(&ctx, 0, 0, ctx.width, ctx.height);
-				old_width = ctx.width;
-				old_height = ctx.height;
 			}
 
 			gettimeofday(&chrono_struct, NULL);
