@@ -1,5 +1,5 @@
-#if 0
 #define _XOPEN_SOURCE 500
+#if 0
 
 #include "globox.h"
 #include <unistd.h>
@@ -194,7 +194,7 @@ int main()
 
 	return 0;
 }
-#endif
+#else
 #include "globox.h"
 #include <wayland-client.h>
 
@@ -221,3 +221,4 @@ int main()
 
 	return 0;
 }
+#endif

@@ -25,7 +25,6 @@ void globox_set_title_x11(struct globox* globox, const char* title);
 void globox_set_state_x11(struct globox* globox, enum globox_state state);
 void globox_set_pos_x11(struct globox* globox, uint32_t x, uint32_t y);
 bool globox_set_size_x11(struct globox* globox, uint32_t width, uint32_t height);
-void globox_set_visible_x11(struct globox* globox, bool visible);
 
 char* globox_get_title_x11(struct globox* globox);
 enum globox_state globox_get_state_x11(struct globox* globox);

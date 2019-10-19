@@ -1,10 +1,12 @@
-#define _POSIX_C_SOURCE 200112L
+#define _XOPEN_SOURCE 500
+#ifdef GLOBOX_WAYLAND
 
 #include "globox_wayland.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <time.h>
@@ -223,7 +225,7 @@ static void registry_global_remove(
 }
 
 // globox functions
-bool globox_open_wayland(struct globox* globox, const char* title)
+inline bool globox_open_wayland(struct globox* globox, const char* title)
 {
 	// callbacks
 	globox->wl_buffer_listener.release = wl_buffer_release;
@@ -245,8 +247,94 @@ bool globox_open_wayland(struct globox* globox, const char* title)
 
     xdg_surface_add_listener(globox->xdg_surface, &(globox->xdg_surface_listener), globox);
     globox->xdg_toplevel = xdg_surface_get_toplevel(globox->xdg_surface);
-    xdg_toplevel_set_title(globox->xdg_toplevel, title);
+
+	globox->title = NULL;
+	globox_set_title_wayland(globox, title);
+
     wl_surface_commit(globox->wl_surface);
 
 	return true;
 }
+
+inline void globox_close_wayland(struct globox* globox)
+{
+}
+
+inline bool globox_handle_events_wayland(struct globox* globox)
+{
+	return false;
+}
+
+inline bool globox_shrink_wayland(struct globox* globox)
+{
+	return false;
+}
+
+inline void globox_copy_wayland(
+	struct globox* globox,
+	int32_t x,
+	int32_t y,
+	uint32_t width,
+	uint32_t height)
+{
+}
+
+inline void globox_commit_wayland(
+	struct globox* globox)
+{
+    wl_surface_commit(globox->wl_surface);
+}
+
+inline void globox_set_icon_wayland(struct globox* globox, uint32_t* pixmap, uint32_t len)
+{
+	// wayland does not support client-side icons
+}
+
+inline void globox_set_title_wayland(struct globox* globox, const char* title)
+{
+	if (globox->title != NULL)
+	{
+		free(globox->title);
+	}
+
+	globox->title = strdup(title);
+
+    xdg_toplevel_set_title(globox->xdg_toplevel, title);
+}
+
+inline void globox_set_state_wayland(struct globox* globox, enum globox_state state)
+{
+}
+
+inline void globox_set_pos_wayland(struct globox* globox, uint32_t x, uint32_t y)
+{
+}
+
+inline bool globox_set_size_wayland(struct globox* globox, uint32_t width, uint32_t height)
+{
+	return false;
+}
+
+inline char* globox_get_title_wayland(struct globox* globox)
+{
+	return globox->title;
+}
+
+inline enum globox_state globox_get_state_wayland(struct globox* globox)
+{
+	return globox->state;
+}
+
+inline void globox_get_pos_wayland(struct globox* globox, int32_t* x, int32_t* y)
+{
+	*x = globox->x;
+	*y = globox->y;
+}
+
+inline void globox_get_size_wayland(struct globox* globox, uint32_t* width, uint32_t* height)
+{
+	*width = globox->width;
+	*height = globox->height;
+}
+
+#endif
