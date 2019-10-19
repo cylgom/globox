@@ -1,9 +1,8 @@
 #ifndef H_GLOBOX_X11
 #define H_GLOBOX_X11
 
-#include "globox.h"
-
 #include <stdbool.h>
+#include "globox.h"
 
 bool globox_open_x11(struct globox* globox, const char* title);
 void globox_close_x11(struct globox* globox);

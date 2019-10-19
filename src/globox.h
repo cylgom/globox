@@ -10,6 +10,11 @@
 #include <xcb/xcb_image.h>
 #endif
 
+#ifdef GLOBOX_WAYLAND
+#include <wayland-client.h>
+#include "xdg-shell-client-protocol.h"
+#endif
+
 // structures
 enum globox_state
 {
@@ -45,6 +50,23 @@ struct globox
 	bool x11_visible;
 
 	xcb_atom_t x11_atoms[6];
+#endif
+
+#ifdef GLOBOX_WAYLAND
+    struct wl_display *wl_display;
+    struct wl_registry *wl_registry;
+    struct wl_shm *wl_shm;
+    struct wl_compositor *wl_compositor;
+    struct xdg_wm_base *xdg_wm_base;
+
+    struct wl_surface *wl_surface;
+    struct xdg_surface *xdg_surface;
+    struct xdg_toplevel *xdg_toplevel;
+
+	struct wl_buffer_listener wl_buffer_listener;
+	struct xdg_surface_listener xdg_surface_listener;
+	struct xdg_wm_base_listener xdg_wm_base_listener;
+	struct wl_registry_listener wl_registry_listener;
 #endif
 };
 

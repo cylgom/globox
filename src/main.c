@@ -1,3 +1,4 @@
+#if 0
 #define _XOPEN_SOURCE 500
 
 #include "globox.h"
@@ -11,7 +12,7 @@ extern unsigned char iconpix_len;
 
 int main()
 {
-	struct globox ctx;
+	struct globox ctx = {0};
 
 	bool ok = globox_open(
 		&ctx,
@@ -189,6 +190,33 @@ int main()
 		}
 
 		globox_close(&ctx);
+	}
+
+	return 0;
+}
+#endif
+#include "globox.h"
+#include <wayland-client.h>
+
+int main()
+{
+	struct globox ctx = {0};
+
+	bool ok = globox_open(
+		&ctx,
+		GLOBOX_STATE_REGULAR,
+		"test",
+		0,
+		0,
+		100,
+		100);
+
+	if (ok)
+	{
+		while (wl_display_dispatch(ctx.wl_display))
+		{
+
+		}
 	}
 
 	return 0;

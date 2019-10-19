@@ -6,6 +6,10 @@
 #include "globox_x11.h"
 #endif
 
+#ifdef GLOBOX_WAYLAND
+#include "globox_wayland.h"
+#endif
+
 // window creation
 bool globox_open(
 	struct globox* globox,
@@ -26,12 +30,20 @@ bool globox_open(
 #ifdef GLOBOX_X11
 	return globox_open_x11(globox, title);
 #endif
+
+#ifdef GLOBOX_WAYLAND
+	return globox_open_wayland(globox, title);
+#endif
 }
 
 void globox_close(struct globox* globox)
 {
 #ifdef GLOBOX_X11
 		globox_close_x11(globox);
+#endif
+
+#ifdef GLOBOX_WAYLAND
+	return;
 #endif
 }
 
@@ -41,12 +53,20 @@ bool globox_handle_events(struct globox* globox)
 #ifdef GLOBOX_X11
 	return globox_handle_events_x11(globox);
 #endif
+
+#ifdef GLOBOX_WAYLAND
+	return true;
+#endif
 }
 
 bool globox_shrink(struct globox* globox)
 {
 #ifdef GLOBOX_X11
 	return globox_shrink_x11(globox);
+#endif
+
+#ifdef GLOBOX_WAYLAND
+	return true;
 #endif
 }
 
@@ -65,6 +85,10 @@ void globox_copy(
 		y,
 		width,
 		height);
+#endif
+
+#ifdef GLOBOX_WAYLAND
+	return;
 #endif
 }
 
@@ -112,6 +136,10 @@ bool globox_set_size(struct globox* globox, uint32_t width, uint32_t height)
 	ret = globox_set_size_x11(globox, width, height);
 #endif
 
+#ifdef GLOBOX_WAYLAND
+	ret = true;
+#endif
+
 	globox->width = width;
 	globox->height = height;
 
@@ -124,12 +152,20 @@ char* globox_get_title(struct globox* globox)
 #ifdef GLOBOX_X11
 	return globox_get_title_x11(globox);
 #endif
+
+#ifdef GLOBOX_WAYLAND
+	return NULL;
+#endif
 }
 
 enum globox_state globox_get_state(struct globox* globox)
 {
 #ifdef GLOBOX_X11
 	return globox_get_state_x11(globox);
+#endif
+
+#ifdef GLOBOX_WAYLAND
+	return 0;
 #endif
 }
 
@@ -138,11 +174,19 @@ void globox_get_pos(struct globox* globox, int32_t* x, int32_t* y)
 #ifdef GLOBOX_X11
 	globox_get_pos_x11(globox, x, y);
 #endif
+
+#ifdef GLOBOX_WAYLAND
+	return;
+#endif
 }
 
 void globox_get_size(struct globox* globox, uint32_t* width, uint32_t* height)
 {
 #ifdef GLOBOX_X11
 	globox_get_size_x11(globox, width, height);
+#endif
+
+#ifdef GLOBOX_WAYLAND
+	return;
 #endif
 }
