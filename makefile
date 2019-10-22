@@ -23,7 +23,7 @@ ifeq ($(BACKEND), x11)
 FLAGS+= -DGLOBOX_X11
 SRCS+= $(SRCD)/globox_x11.c
 SRCS_OBJS = $(OBJD)/$(RESD)/iconpix.o
-LINK = -lxcb -lxcb-shm -lxcb-randr
+LINK = -lxcb -lxcb-shm -lxcb-randr -lrt
 
 .PHONY: final
 final: $(BIND)/$(NAME)

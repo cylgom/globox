@@ -178,9 +178,9 @@ int main()
 			new = ((uint64_t) chrono_struct.tv_sec) * 1000000
 				+ (uint64_t) chrono_struct.tv_sec;
 
-			if ((new - frame) < 10000)
+			if ((new - frame) < 8333)
 			{
-				usleep((10000 - new + frame) / 1000);
+				usleep((8333 - new + frame) / 1000);
 			}
 		}
 
