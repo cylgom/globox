@@ -816,7 +816,7 @@ inline void globox_set_title_x11(struct globox* globox, const char* title)
 		XCB_ATOM_WM_NAME,
 		XCB_ATOM_STRING,
 		8,
-		strlen(title),
+		strlen(title) + 1,
 		title);
 }
 
