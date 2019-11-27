@@ -64,7 +64,10 @@ int main()
 	{
 		// basic window config
 		globox_set_title(&ctx, "HELO");
-		globox_set_icon(&ctx, (uint32_t*) &iconpix_beg);
+		globox_set_icon(
+			&ctx,
+			(uint32_t*) &iconpix_beg,
+			2 + (16 * 16) + 2 + (32 * 32) + 2 + (64 * 64));
 		globox_commit(&ctx);
 
 		// set SIGALRM fake handle

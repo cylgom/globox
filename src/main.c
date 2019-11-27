@@ -1,5 +1,5 @@
 #define _XOPEN_SOURCE 500
-#if 1
+#if 0
 
 #include "globox.h"
 #include <unistd.h>
@@ -26,7 +26,10 @@ int main()
 	if (ok)
 	{
 		globox_set_title(&ctx, "HELO");
-		globox_set_icon(&ctx, (uint32_t*) &iconpix_beg);
+		globox_set_icon(
+			&ctx,
+			(uint32_t*) &iconpix_beg,
+			2 + (16 * 16) + 2 + (32 * 32) + 2 + (64 * 64));
 		sleep(1);
 		globox_set_state(&ctx, GLOBOX_STATE_MINIMIZED);
 		globox_commit(&ctx);

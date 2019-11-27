@@ -14,15 +14,15 @@ RESD = res
 
 INCL = -I$(SRCD)
 INCL+= -I$(INCD)
-SRCS = $(SRCD)/main_epoll.c
-SRCS+= $(SRCD)/globox.c
+SRCS = $(SRCD)/main.c
 
-BACKEND ?= x11
+#BACKEND ?= x11
 
 # x11
 ifeq ($(BACKEND), x11)
 
 FLAGS+= -DGLOBOX_X11
+SRCS+= $(SRCD)/x11.c
 SRCS+= $(SRCD)/globox_x11.c
 SRCS_OBJS = $(OBJD)/$(RESD)/iconpix.o
 LINK = -lxcb -lxcb-shm -lxcb-randr -lrt
@@ -34,6 +34,7 @@ final: $(BIND)/$(NAME)
 else
 
 FLAGS+= -DGLOBOX_WAYLAND
+SRCS+= $(SRCD)/wayland.c
 SRCS+= $(SRCD)/globox_wayland.c
 SRCS+= $(INCD)/xdg-shell-protocol.c
 LINK = -lwayland-client -lrt
