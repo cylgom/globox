@@ -239,6 +239,7 @@ inline bool globox_open_x11(struct globox* globox, const char* title)
 {
 	// connect to server
 	globox->x11_conn = xcb_connect(NULL, &(globox->x11_screen));
+	globox->fd = xcb_get_file_descriptor(globox->x11_conn);
 
 	// provide ewmh-dependant functions
 	if (!init_atoms(globox))

@@ -14,8 +14,10 @@ RESD = res
 
 INCL = -I$(SRCD)
 INCL+= -I$(INCD)
-SRCS = $(SRCD)/main.c
+SRCS = $(SRCD)/main_epoll.c
 SRCS+= $(SRCD)/globox.c
+
+BACKEND ?= x11
 
 # x11
 ifeq ($(BACKEND), x11)

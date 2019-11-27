@@ -37,6 +37,7 @@ struct globox
 	char* title;
 	enum globox_state state;
 	bool redraw;
+	int fd;
 
 #ifdef GLOBOX_X11
 	xcb_connection_t* x11_conn;
