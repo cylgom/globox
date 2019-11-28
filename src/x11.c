@@ -75,6 +75,11 @@ inline xcb_screen_t* get_screen(struct globox* globox)
 // to work around resizing artifacts on some desktop environments
 inline void create_window(struct globox* globox, xcb_screen_t* screen)
 {
+	// NTS
+	// The XFCE background pixmap glitch can't be addressed
+	// and is present everywhere, even in firefox and xfce4-terminal.
+	// Since this is fucking X11 and the issue is minor anyway
+	// it is probably better left as-is.
 	uint32_t values[2] =
 	{
 		XCB_BACK_PIXMAP_NONE,
