@@ -100,8 +100,10 @@ inline void globox_set_state(struct globox* globox, enum globox_state state)
 
 inline void globox_set_pos(struct globox* globox, uint32_t x, uint32_t y)
 {
+	// wayland does not support client-side position info
 }
 
+// this is not possible under Wayland!
 inline bool globox_set_size(struct globox* globox, uint32_t width, uint32_t height)
 {
 	return false;
@@ -119,8 +121,7 @@ inline enum globox_state globox_get_state(struct globox* globox)
 
 inline void globox_get_pos(struct globox* globox, int32_t* x, int32_t* y)
 {
-	*x = globox->x;
-	*y = globox->y;
+	// wayland does not support client-side position info
 }
 
 inline void globox_get_size(struct globox* globox, uint32_t* width, uint32_t* height)
