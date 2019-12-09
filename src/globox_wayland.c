@@ -103,7 +103,6 @@ inline void globox_set_pos(struct globox* globox, uint32_t x, uint32_t y)
 	// wayland does not support client-side position info
 }
 
-// this is not possible under Wayland!
 inline bool globox_set_size(struct globox* globox, uint32_t width, uint32_t height)
 {
 	return false;
