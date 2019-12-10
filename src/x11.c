@@ -97,8 +97,8 @@ inline void create_window(struct globox* globox, xcb_screen_t* screen)
 		24, // force 24bpp instead of XCB_COPY_FROM_PARENT
 		globox->x11_win,
 		screen->root,
-		globox->x,
-		globox->y,
+		globox->init_x,
+		globox->init_y,
 		globox->width,
 		globox->height,
 		0, // TODO window class

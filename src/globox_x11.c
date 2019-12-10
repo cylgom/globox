@@ -23,8 +23,8 @@ inline bool globox_open(
 	uint32_t height)
 {
 	// common init
-	globox->x = x;
-	globox->y = y;
+	globox->init_x = x;
+	globox->init_y = y;
 	globox->width = width;
 	globox->height = height;
 	globox->buf_width = width;
@@ -229,9 +229,6 @@ inline bool globox_handle_events(struct globox* globox)
 			globox->width = resize->width;
 			globox->height = resize->height;
 		}
-
-		globox->x = resize->x;
-		globox->y = resize->y;
 
 		free(resize);
 	}
@@ -474,18 +471,6 @@ inline void globox_set_state(struct globox* globox, enum globox_state state)
 	globox->state = state;
 }
 
-// ask the server to move the window
-inline void globox_set_pos(struct globox* globox, uint32_t x, uint32_t y)
-{
-	uint32_t values[2] = {x, y};
-
-	xcb_configure_window(
-		globox->x11_conn,
-		globox->x11_win,
-		XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y,
-		values);
-}
-
 // ask the server to resize the window
 inline bool globox_set_size(struct globox* globox, uint32_t width, uint32_t height)
 {
@@ -520,12 +505,6 @@ inline char* globox_get_title(struct globox* globox)
 inline enum globox_state globox_get_state(struct globox* globox)
 {
 	return globox->state;
-}
-
-inline void globox_get_pos(struct globox* globox, int32_t* x, int32_t* y)
-{
-	*x = globox->x;
-	*y = globox->y;
 }
 
 inline void globox_get_size(struct globox* globox, uint32_t* width, uint32_t* height)

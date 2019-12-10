@@ -18,6 +18,14 @@ inline bool globox_open(
 	uint32_t width,
 	uint32_t height)
 {
+	globox->init_x = x;
+	globox->init_y = y;
+	globox->width = width;
+	globox->height = height;
+	globox->buf_width = width;
+	globox->buf_height = height;
+	globox->redraw = true;
+
 	// callbacks
 	globox->wl_buffer_listener.release = wl_buffer_release;
 	globox->xdg_surface_listener.configure = xdg_surface_configure;

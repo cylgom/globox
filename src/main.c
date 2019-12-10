@@ -62,41 +62,6 @@ int main()
 
 		sleep(1);
 
-		uint32_t x = 0;
-		uint32_t y = 0;
-
-		while (x < 500)
-		{
-			usleep(1000);
-			globox_set_pos(&ctx, x, y);
-			globox_commit(&ctx);
-			++x;
-		}
-
-		while (y < 500)
-		{
-			usleep(1000);
-			globox_set_pos(&ctx, x, y);
-			globox_commit(&ctx);
-			++y;
-		}
-
-		while (x > 0)
-		{
-			usleep(1000);
-			globox_set_pos(&ctx, x, y);
-			globox_commit(&ctx);
-			--x;
-		}
-
-		while (y > 0)
-		{
-			usleep(1000);
-			globox_set_pos(&ctx, x, y);
-			globox_commit(&ctx);
-			--y;
-		}
-
 		uint32_t size = 100;
 
 		while (size < 500)
