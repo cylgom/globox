@@ -26,10 +26,13 @@ enum globox_state
 
 struct globox
 {
+	// these only represent the initial window position
 	int32_t init_x;
 	int32_t init_y;
+	// window size
 	uint32_t width;
 	uint32_t height;
+	// image buffer *maximum* size
 	uint32_t buf_width;
 	uint32_t buf_height;
 	uint32_t* argb;
