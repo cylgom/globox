@@ -72,6 +72,9 @@ struct globox
 	struct xdg_surface_listener xdg_surface_listener;
 	struct xdg_wm_base_listener xdg_wm_base_listener;
 	struct wl_registry_listener wl_registry_listener;
+
+	uint32_t* wl_icon;
+	uint32_t wl_icon_len;
 #endif
 };
 
