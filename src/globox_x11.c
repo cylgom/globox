@@ -112,6 +112,7 @@ inline bool globox_open(
 
 	globox->title = NULL;
 	globox_set_title(globox, title);
+	globox_set_state(globox, state);
 
 	return true;
 }
