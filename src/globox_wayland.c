@@ -26,6 +26,9 @@ inline bool globox_open(
 	globox->buf_height = height;
 	globox->redraw = true;
 
+	globox->wl_icon = NULL;
+	globox->wl_icon_len = 0;
+
 	// callbacks
 	globox->wl_buffer_listener.release = wl_buffer_release;
 	globox->xdg_surface_listener.configure = xdg_surface_configure;
