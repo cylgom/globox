@@ -1,5 +1,5 @@
 #define _XOPEN_SOURCE 500
-#if 0
+#if 1
 
 #include "globox.h"
 #include <unistd.h>
@@ -21,7 +21,8 @@ int main()
 		0,
 		0,
 		100,
-		100);
+		100,
+		false);
 
 	if (ok)
 	{

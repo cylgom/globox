@@ -16,7 +16,7 @@ INCL = -I$(SRCD)
 INCL+= -I$(INCD)
 SRCS = $(SRCD)/main.c
 
-#BACKEND ?= x11
+BACKEND ?= x11
 
 # x11
 ifeq ($(BACKEND), x11)

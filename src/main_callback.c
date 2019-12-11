@@ -6,6 +6,9 @@
 #include <time.h>
 #include <string.h>
 #include <stdio.h>
+#include <sys/epoll.h>
+
+#define MAX_EVENTS 1000
 
 extern unsigned char iconpix_beg;
 extern unsigned char iconpix_end;
@@ -13,12 +16,6 @@ extern unsigned char iconpix_len;
 
 // global context because I'm lazy
 struct globox ctx = {0};
-
-// fake handle used to register for SIGALRM interruption
-void nothing()
-{
-
-}
 
 // update window on SIGALRM
 static inline void handler(int sig)
@@ -58,7 +55,8 @@ int main()
 		0,
 		0,
 		100,
-		100);
+		100,
+		true);
 
 	if (ok)
 	{
@@ -68,37 +66,31 @@ int main()
 			&ctx,
 			(uint32_t*) &iconpix_beg,
 			2 + (16 * 16) + 2 + (32 * 32) + 2 + (64 * 64));
+		globox_set_frame_timer(&ctx);
 		globox_commit(&ctx);
 
-		// set SIGALRM fake handle
-		struct sigaction sa;
-		memset(&sa, 0, sizeof (sa));
-		sa.sa_handler = &nothing;
-		sigaction(SIGALRM, &sa, NULL);
+		// event polling initialization
+		int fd = epoll_create(1);
 
-		// prepare timer
-		timer_t timer;
-		timer_create(CLOCK_REALTIME, NULL, &timer);
+		struct epoll_event ev =
+		{
+			EPOLLIN,
+			{0},
+		};
 
-		// 120 fps ftw
-		struct itimerspec time_struct;
-		time_struct.it_value.tv_sec = 0;
-		time_struct.it_value.tv_nsec = 8333333;
-		time_struct.it_interval.tv_sec = 0;
-		time_struct.it_interval.tv_nsec = 8333333;
+		// frame callback timer event
+		epoll_ctl(
+			fd,
+			EPOLL_CTL_ADD,
+			ctx.fd_frame,
+			&ev);
 
-		// register timer
-		timer_settime(timer, 0, &time_struct, NULL);
+		// loop
+		struct epoll_event list[MAX_EVENTS];
 
-		// prepare sigset watchpoint
-		int ret;
-		sigset_t set;
-
-		// actually handle SIGALRM signals
 		while (1)
 		{
-			sigaddset(&set, SIGALRM);
-			sigwait(&set, &ret);
+			epoll_wait(fd, list, MAX_EVENTS, -1);
 			handler(0);
 		}
 
