@@ -33,5 +33,6 @@ void set_state(
 	struct globox* globox,
 	xcb_atom_t atom,
 	uint32_t action);
+void set_frame_timer(struct globox* globox);
 
 #endif

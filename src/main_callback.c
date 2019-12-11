@@ -66,7 +66,6 @@ int main()
 			&ctx,
 			(uint32_t*) &iconpix_beg,
 			2 + (16 * 16) + 2 + (32 * 32) + 2 + (64 * 64));
-		globox_set_frame_timer(&ctx);
 		globox_commit(&ctx);
 
 		// event polling initialization

@@ -10,7 +10,6 @@
 #include <sys/shm.h>
 #include <sys/timerfd.h>
 #include <xcb/shm.h>
-#include <xcb/randr.h>
 #include "x11.h"
 
 #define EXPOSE_QUEUE_LEN 10
@@ -122,6 +121,7 @@ inline bool globox_open(
 	globox->title = NULL;
 	globox_set_title(globox, title);
 	globox_set_state(globox, state);
+	set_frame_timer(globox);
 
 	return true;
 }
@@ -505,40 +505,6 @@ inline bool globox_set_size(struct globox* globox, uint32_t width, uint32_t heig
 	globox->height = height;
 
 	return ret;
-}
-
-void globox_set_frame_timer(struct globox* globox)
-{
-	if (globox->frame_event)
-	{
-		// gets screen refresh rate
-		xcb_randr_get_screen_info_cookie_t cookie = xcb_randr_get_screen_info(
-			globox->x11_conn,
-			globox->x11_win);
-
-		xcb_generic_error_t* err = NULL;
-
-		xcb_randr_get_screen_info_reply_t* reply = xcb_randr_get_screen_info_reply(
-			globox->x11_conn,
-			cookie,
-			&err);
-
-		// abort
-		if (err != NULL)
-		{
-			return;
-		}
-
-		// timer init
-		struct itimerspec timer;
-		timer.it_value.tv_sec = 0;
-		timer.it_value.tv_nsec = 1000000000 / reply->rate;
-		timer.it_interval.tv_sec = 0;
-		timer.it_interval.tv_nsec = 1000000000 / reply->rate;
-
-		free(reply);
-		timerfd_settime(globox->fd_frame, 0, &timer, NULL);
-	}
 }
 
 inline char* globox_get_title(struct globox* globox)

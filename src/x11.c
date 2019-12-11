@@ -8,6 +8,7 @@
 #include <string.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <sys/timerfd.h>
 #include <xcb/randr.h>
 #include <xcb/shm.h>
 #include <xcb/xcb.h>
@@ -442,6 +443,40 @@ void set_state(
 		globox->x11_win,
 		XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY,
 		(const char*)(&ev));
+}
+
+void set_frame_timer(struct globox* globox)
+{
+	if (globox->frame_event)
+	{
+		// gets screen refresh rate
+		xcb_randr_get_screen_info_cookie_t cookie = xcb_randr_get_screen_info(
+			globox->x11_conn,
+			globox->x11_win);
+
+		xcb_generic_error_t* err = NULL;
+
+		xcb_randr_get_screen_info_reply_t* reply = xcb_randr_get_screen_info_reply(
+			globox->x11_conn,
+			cookie,
+			&err);
+
+		// abort
+		if (err != NULL)
+		{
+			return;
+		}
+
+		// timer init
+		struct itimerspec timer;
+		timer.it_value.tv_sec = 0;
+		timer.it_value.tv_nsec = 1000000000 / reply->rate;
+		timer.it_interval.tv_sec = 0;
+		timer.it_interval.tv_nsec = 1000000000 / reply->rate;
+
+		free(reply);
+		timerfd_settime(globox->fd_frame, 0, &timer, NULL);
+	}
 }
 
 #endif
