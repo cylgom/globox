@@ -28,5 +28,9 @@ void registry_global_remove(
 	void *data,
 	struct wl_registry *wl_registry,
 	uint32_t name);
+void wl_surface_frame_done(
+	void *data,
+	struct wl_callback *frame_callback,
+	uint32_t time);
 
 #endif

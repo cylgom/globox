@@ -397,6 +397,11 @@ inline void globox_commit(struct globox* globox)
 	xcb_flush(globox->x11_conn);
 }
 
+inline void globox_prepoll(struct globox* globox)
+{
+	// TODO
+}
+
 // direct icon change
 inline void globox_set_icon(struct globox* globox, uint32_t* pixmap, uint32_t len)
 {

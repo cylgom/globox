@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE 500
+#define _XOPEN_SOURCE 700
 #ifdef GLOBOX_WAYLAND
 
 #include "wayland.h"
@@ -8,7 +8,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/eventfd.h>
 #include <sys/mman.h>
+#include <stdio.h>
 #include <time.h>
 #include <unistd.h>
 #include <wayland-client.h>
@@ -83,11 +85,8 @@ int allocate_shm_file(size_t size)
 
 struct wl_buffer* draw_frame(struct globox* globox)
 {
-    const uint32_t width = 640;
-	const uint32_t height = 480;
-
-    int stride = width * 4;
-    int size = stride * height;
+    int stride = globox->width * 4;
+    int size = stride * globox->height;
 
     int fd = allocate_shm_file(size);
 
@@ -96,7 +95,7 @@ struct wl_buffer* draw_frame(struct globox* globox)
         return NULL;
     }
 
-    uint32_t *data = mmap(
+    globox->argb = mmap(
 		NULL,
 		size,
         PROT_READ | PROT_WRITE,
@@ -104,7 +103,7 @@ struct wl_buffer* draw_frame(struct globox* globox)
 		fd,
 		0);
 
-    if (data == MAP_FAILED)
+    if (globox->argb == MAP_FAILED)
 	{
         close(fd);
 
@@ -119,32 +118,13 @@ struct wl_buffer* draw_frame(struct globox* globox)
     struct wl_buffer *buffer = wl_shm_pool_create_buffer(
 		pool,
 		0,
-		width,
-		height,
+		globox->width,
+		globox->height,
 		stride,
 		WL_SHM_FORMAT_XRGB8888);
 
     wl_shm_pool_destroy(pool);
     close(fd);
-
-	// checkerboard example
-    for (uint32_t y = 0; y < height; ++y)
-	{
-        for (uint32_t x = 0; x < width; ++x)
-		{
-            if ((x + y / 8 * 8) % 16 < 8)
-			{
-                data[y * width + x] = 0xFF666666;
-			}
-            else
-			{
-                data[y * width + x] = 0xFFEEEEEE;
-			}
-        }
-    }
-
-    munmap(data, size);
-    wl_buffer_add_listener(buffer, &(globox->wl_buffer_listener), NULL);
 
     return buffer;
 }
@@ -152,7 +132,7 @@ struct wl_buffer* draw_frame(struct globox* globox)
 // callbacks
 void wl_buffer_release(void *data, struct wl_buffer *wl_buffer)
 {
-    wl_buffer_destroy(wl_buffer);
+	wl_buffer_destroy(wl_buffer);
 }
 
 void xdg_surface_configure(
@@ -165,7 +145,6 @@ void xdg_surface_configure(
 
     struct wl_buffer *buffer = draw_frame(globox);
     wl_surface_attach(globox->wl_surface, buffer, 0, 0);
-    wl_surface_commit(globox->wl_surface);
 }
 
 void xdg_wm_base_ping(
@@ -222,6 +201,25 @@ void registry_global_remove(
 	uint32_t name)
 {
 
+}
+
+void wl_surface_frame_done(
+	void *data,
+	struct wl_callback *frame_callback,
+	uint32_t time)
+{
+	static const uint64_t one = 1;
+	struct globox* globox = (struct globox*) data;
+
+	wl_callback_destroy(frame_callback);
+	globox->wl_frame_callback = wl_surface_frame(globox->wl_surface);
+	wl_callback_add_listener(
+		globox->wl_frame_callback,
+		&(globox->wl_surface_frame_listener),
+		globox);
+
+	write(globox->fd_frame, &one, 8);
+	fsync(globox->fd_frame);
 }
 
 #endif

@@ -14,9 +14,10 @@ RESD = res
 
 INCL = -I$(SRCD)
 INCL+= -I$(INCD)
-SRCS = $(SRCD)/main.c
+SRCS = $(SRCD)/main_callback.c
+SRCS_OBJS = $(OBJD)/$(RESD)/iconpix.o
 
-BACKEND ?= x11
+#BACKEND ?= x11
 
 # x11
 ifeq ($(BACKEND), x11)
@@ -24,7 +25,6 @@ ifeq ($(BACKEND), x11)
 FLAGS+= -DGLOBOX_X11
 SRCS+= $(SRCD)/x11.c
 SRCS+= $(SRCD)/globox_x11.c
-SRCS_OBJS = $(OBJD)/$(RESD)/iconpix.o
 LINK = -lxcb -lxcb-shm -lxcb-randr -lrt
 
 .PHONY: final

@@ -24,6 +24,7 @@ static inline void handler(int sig)
 
 	if (ctx.redraw)
 	{
+#if 0
 		// background
 		for (uint32_t i = 0; i < ctx.height * ctx.width; ++i)
 		{
@@ -40,6 +41,7 @@ static inline void handler(int sig)
 
 			ctx.argb[pos] = 0x00FFFFFF;
 		}
+#endif
 
 		globox_copy(&ctx, 0, 0, ctx.width, ctx.height);
 	}
@@ -88,6 +90,7 @@ int main()
 
 		while (1)
 		{
+			globox_prepoll(&ctx);
 			epoll_wait(fd, list, MAX_EVENTS, -1);
 			handler(0);
 		}

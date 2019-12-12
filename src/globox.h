@@ -69,6 +69,8 @@ struct globox
     struct xdg_wm_base *xdg_wm_base;
 
     struct wl_surface *wl_surface;
+	struct wl_callback *wl_frame_callback;
+	struct wl_callback_listener wl_surface_frame_listener;
     struct xdg_surface *xdg_surface;
     struct xdg_toplevel *xdg_toplevel;
 
@@ -110,6 +112,9 @@ void globox_copy(
 	uint32_t height);
 
 void globox_commit(
+	struct globox* globox);
+
+void globox_prepoll(
 	struct globox* globox);
 
 // setters

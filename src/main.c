@@ -1,5 +1,5 @@
 #define _XOPEN_SOURCE 500
-#if 1
+#if 0
 
 #include "globox.h"
 #include <unistd.h>
@@ -173,13 +173,14 @@ int main()
 		0,
 		0,
 		100,
-		100);
+		100,
+		true);
 
 	if (ok)
 	{
 		while (wl_display_dispatch(ctx.wl_display))
 		{
-
+			globox_copy(&ctx, 0, 0, 100, 100);
 		}
 	}
 

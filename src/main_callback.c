@@ -24,6 +24,7 @@ static inline void handler(int sig)
 
 	if (ctx.redraw)
 	{
+#if 0
 		// background
 		for (uint32_t i = 0; i < ctx.height * ctx.width; ++i)
 		{
@@ -40,6 +41,7 @@ static inline void handler(int sig)
 
 			ctx.argb[pos] = 0x00FFFFFF;
 		}
+#endif
 
 		globox_copy(&ctx, 0, 0, ctx.width, ctx.height);
 	}
@@ -69,13 +71,20 @@ int main()
 		globox_commit(&ctx);
 
 		// event polling initialization
-		int fd = epoll_create(1);
+		int fd = epoll_create(2);
 
 		struct epoll_event ev =
 		{
 			EPOLLIN,
 			{0},
 		};
+
+		// main events
+		epoll_ctl(
+			fd,
+			EPOLL_CTL_ADD,
+			ctx.fd,
+			&ev);
 
 		// frame callback timer event
 		epoll_ctl(
@@ -89,6 +98,7 @@ int main()
 
 		while (1)
 		{
+			globox_prepoll(&ctx);
 			epoll_wait(fd, list, MAX_EVENTS, -1);
 			handler(0);
 		}
