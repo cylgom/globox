@@ -44,6 +44,7 @@ struct globox
 	int fd;
 
 	bool frame_event;
+	bool closed;
 	int fd_frame;
 
 #ifdef GLOBOX_X11
@@ -73,10 +74,16 @@ struct globox
 	struct wl_callback_listener wl_surface_frame_listener;
     struct xdg_surface *xdg_surface;
     struct xdg_toplevel *xdg_toplevel;
+	struct xdg_toplevel_listener xdg_toplevel_listener;
+	struct wl_output* wl_output;
+	struct wl_output_listener wl_output_listener;
 
 	int wl_buffer_fd;
 	struct wl_shm_pool *wl_pool;
 	struct wl_buffer *wl_buffer;
+
+	uint32_t wl_screen_width;
+	uint32_t wl_screen_height;
 
 	struct wl_buffer_listener wl_buffer_listener;
 	struct xdg_surface_listener xdg_surface_listener;

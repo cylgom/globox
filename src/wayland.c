@@ -85,8 +85,8 @@ int allocate_shm_file(size_t size)
 
 bool allocate_buffer(struct globox* globox)
 {
-    int stride = globox->width * 4;
-    int size = stride * globox->height;
+    int stride = globox->buf_width * 4;
+    int size = stride * globox->buf_height;
     int fd = allocate_shm_file(size);
 
     if (fd == -1)
@@ -119,8 +119,8 @@ bool allocate_buffer(struct globox* globox)
     globox->wl_buffer = wl_shm_pool_create_buffer(
 		globox->wl_pool,
 		0,
-		globox->width,
-		globox->height,
+		globox->buf_width,
+		globox->buf_height,
 		stride,
 		WL_SHM_FORMAT_XRGB8888);
 
@@ -191,6 +191,19 @@ void registry_global(
 			&(globox->xdg_wm_base_listener),
 			globox);
     }
+	else if (strcmp(interface, wl_output_interface.name) == 0)
+	{
+		globox->wl_output = wl_registry_bind(
+			wl_registry,
+			name,
+			&wl_output_interface,
+			1);
+
+		wl_output_add_listener(
+			globox->wl_output,
+			&(globox->wl_output_listener),
+			globox);
+	}
 }
 
 void registry_global_remove(
@@ -218,6 +231,95 @@ void wl_surface_frame_done(
 
 	write(globox->fd_frame, &one, 8);
 	fsync(globox->fd_frame);
+}
+
+void xdg_toplevel_configure(
+	void *data,
+	struct xdg_toplevel *xdg_toplevel,
+	int32_t width,
+	int32_t height,
+	struct wl_array *states)
+{
+	struct globox* globox = data;
+
+	if ((width == 0) || (height == 0))
+	{
+		return;
+	}
+
+#if 0
+	if ((globox->buf_width * globox->buf_height) < (uint32_t) (width * height))
+#endif
+	if (true)
+	{
+		wl_shm_pool_destroy(globox->wl_pool);
+		close(globox->wl_buffer_fd);
+		munmap(globox->argb, globox->buf_width * globox->buf_height * 4);
+
+#if 0
+		globox->buf_width = (1 + (width / globox->wl_screen_width))
+			* globox->wl_screen_width;
+		globox->buf_height = (1 + (height / globox->wl_screen_height))
+			* globox->wl_screen_height;
+#endif
+		globox->buf_width = width;
+		globox->buf_height = height;
+
+		allocate_buffer(globox);
+	}
+
+	globox->width = width;
+	globox->height = height;
+}
+
+void xdg_toplevel_close(
+	void *data,
+	struct xdg_toplevel *toplevel)
+{
+	struct globox* globox = data;
+	globox->closed = true;
+}
+
+void wl_output_geometry(
+	void *data,
+	struct wl_output *wl_output,
+	int32_t x,
+	int32_t y,
+	int32_t physical_width,
+	int32_t physical_height,
+	int32_t subpixel,
+	const char *make,
+	const char *model,
+	int32_t output_transform)
+{
+
+}
+
+void wl_output_mode(
+	void *data,
+	struct wl_output *wl_output,
+	uint32_t flags,
+	int32_t width,
+	int32_t height,
+	int32_t refresh)
+{
+	struct globox* globox = data;
+
+	if (flags & WL_OUTPUT_MODE_CURRENT)
+	{
+		globox->wl_screen_width = width;
+		globox->wl_screen_height = height;
+	}
+}
+
+void wl_output_done(void *data, struct wl_output *wl_output)
+{
+
+}
+
+void wl_output_scale(void *data, struct wl_output *wl_output, int32_t scale)
+{
+
 }
 
 #endif

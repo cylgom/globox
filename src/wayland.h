@@ -32,5 +32,34 @@ void wl_surface_frame_done(
 	void *data,
 	struct wl_callback *frame_callback,
 	uint32_t time);
+void xdg_toplevel_configure(
+	void *data,
+	struct xdg_toplevel *xdg_toplevel,
+	int32_t width,
+	int32_t height,
+	struct wl_array *states);
+void xdg_toplevel_close(
+	void *data,
+	struct xdg_toplevel *toplevel);
+void wl_output_geometry(
+	void *data,
+	struct wl_output *wl_output,
+	int32_t x,
+	int32_t y,
+	int32_t physical_width,
+	int32_t physical_height,
+	int32_t subpixel,
+	const char *make,
+	const char *model,
+	int32_t output_transform);
+void wl_output_mode(
+	void *data,
+	struct wl_output *wl_output,
+	uint32_t flags,
+	int32_t width,
+	int32_t height,
+	int32_t refresh);
+void wl_output_done(void *data, struct wl_output *wl_output);
+void wl_output_scale(void *data, struct wl_output *wl_output, int32_t scale);
 
 #endif

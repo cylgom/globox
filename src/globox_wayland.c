@@ -32,6 +32,7 @@ inline bool globox_open(
 	globox->buf_height = height;
 	globox->redraw = true;
 	globox->frame_event = frame_event;
+	globox->closed = false;
 
 	globox->wl_icon = NULL;
 	globox->wl_icon_len = 0;
@@ -40,8 +41,16 @@ inline bool globox_open(
 	globox->wl_buffer_listener.release = wl_buffer_release;
 	globox->xdg_surface_listener.configure = xdg_surface_configure;
 	globox->xdg_wm_base_listener.ping = xdg_wm_base_ping;
+	globox->wl_output_listener.geometry = wl_output_geometry;
+	globox->wl_output_listener.mode = wl_output_mode;
+	globox->wl_output_listener.done = wl_output_done;
+	globox->wl_output_listener.scale = wl_output_scale;
 	globox->wl_registry_listener.global = registry_global;
 	globox->wl_registry_listener.global_remove = registry_global_remove;
+
+	// screen default
+	globox->wl_screen_width = 1920;
+	globox->wl_screen_height = 1080;
 
 	// regular initialization
 	globox->wl_display = wl_display_connect(NULL);
@@ -68,6 +77,7 @@ inline bool globox_open(
 		globox->xdg_surface,
 		&(globox->xdg_surface_listener),
 		globox);
+
     globox->xdg_toplevel = xdg_surface_get_toplevel(globox->xdg_surface);
 
 	globox->title = NULL;
@@ -81,6 +91,7 @@ inline bool globox_open(
 
 	wl_surface_commit(globox->wl_surface);
 
+	// register surface events
 	globox->wl_surface_frame_listener.done = wl_surface_frame_done;
 	globox->wl_frame_callback = wl_surface_frame(globox->wl_surface);
 	wl_callback_add_listener(
@@ -90,6 +101,15 @@ inline bool globox_open(
 
 		wl_display_dispatch(globox->wl_display);
 		globox_copy(globox, 0, 0, globox->width, globox->height);
+
+	// register window events (resize, close, etc)
+	globox->xdg_toplevel_listener.configure = xdg_toplevel_configure;
+	globox->xdg_toplevel_listener.close = xdg_toplevel_close;
+
+	xdg_toplevel_add_listener(
+		globox->xdg_toplevel,
+		&(globox->xdg_toplevel_listener),
+		globox);
 
 	return true;
 }

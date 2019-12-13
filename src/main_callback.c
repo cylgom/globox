@@ -98,6 +98,12 @@ int main()
 		{
 			globox_prepoll(&ctx);
 			epoll_wait(fd, list, MAX_EVENTS, -1);
+
+			if (ctx.closed)
+			{
+				break;
+			}
+
 			handler(0);
 		}
 

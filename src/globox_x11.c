@@ -33,6 +33,7 @@ inline bool globox_open(
 	globox->buf_height = height;
 	globox->redraw = true;
 	globox->frame_event = frame_event;
+	globox->closed = false;
 
 	if (frame_event)
 	{
