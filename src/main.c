@@ -1,5 +1,4 @@
 #define _XOPEN_SOURCE 500
-#if 0
 
 #include "globox.h"
 #include <unistd.h>
@@ -42,22 +41,26 @@ int main()
 		{
 			usleep(1000);
 			ctx.argb[i] = 0x00FFFFFF;
+			globox_prepoll(&ctx);
 			globox_copy(&ctx, 10, 10, 80, 80);
 			globox_commit(&ctx);
 		}
 
 		sleep(1);
 
+		globox_prepoll(&ctx);
 		globox_set_state(&ctx, GLOBOX_STATE_MAXIMIZED);
 		globox_commit(&ctx);
 
 		sleep(2);
 
+		globox_prepoll(&ctx);
 		globox_set_state(&ctx, GLOBOX_STATE_FULLSCREEN);
 		globox_commit(&ctx);
 
 		sleep(2);
 
+		globox_prepoll(&ctx);
 		globox_set_state(&ctx, GLOBOX_STATE_REGULAR);
 		globox_commit(&ctx);
 
@@ -68,6 +71,7 @@ int main()
 		while (size < 500)
 		{
 			++size;
+			globox_prepoll(&ctx);
 			globox_set_size(&ctx, size, size);
 			globox_commit(&ctx);
 			usleep(1000);
@@ -81,6 +85,7 @@ int main()
 			ctx.argb[pos] = 0x00FFFFFF;
 		}
 
+		globox_prepoll(&ctx);
 		globox_copy(&ctx, 10, 10, 80, 80);
 		globox_commit(&ctx);
 
@@ -88,6 +93,7 @@ int main()
 
 		globox_shrink(&ctx);
 
+		globox_prepoll(&ctx);
 		globox_copy(&ctx, 10, 10, 80, 80);
 		globox_commit(&ctx);
 
@@ -96,11 +102,13 @@ int main()
 		while (size > 0)
 		{
 			usleep(1000);
+			globox_prepoll(&ctx);
 			globox_set_size(&ctx, size, size);
 			globox_commit(&ctx);
 			--size;
 		}
 
+		globox_prepoll(&ctx);
 		globox_set_size(&ctx, 100, 100);
 		globox_commit(&ctx);
 
@@ -119,6 +127,7 @@ int main()
 		while ((new - old) < 60000000)
 		{
 			frame = new;
+			globox_prepoll(&ctx);
 			globox_handle_events(&ctx);
 
 			if (ctx.redraw)
@@ -158,32 +167,3 @@ int main()
 
 	return 0;
 }
-#else
-#include "globox.h"
-#include <wayland-client.h>
-
-int main()
-{
-	struct globox ctx = {0};
-
-	bool ok = globox_open(
-		&ctx,
-		GLOBOX_STATE_REGULAR,
-		"test",
-		0,
-		0,
-		100,
-		100,
-		true);
-
-	if (ok)
-	{
-		while (wl_display_dispatch(ctx.wl_display))
-		{
-			globox_copy(&ctx, 0, 0, 100, 100);
-		}
-	}
-
-	return 0;
-}
-#endif

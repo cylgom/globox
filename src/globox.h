@@ -74,6 +74,10 @@ struct globox
     struct xdg_surface *xdg_surface;
     struct xdg_toplevel *xdg_toplevel;
 
+	int wl_buffer_fd;
+	struct wl_shm_pool *wl_pool;
+	struct wl_buffer *wl_buffer;
+
 	struct wl_buffer_listener wl_buffer_listener;
 	struct xdg_surface_listener xdg_surface_listener;
 	struct xdg_wm_base_listener xdg_wm_base_listener;

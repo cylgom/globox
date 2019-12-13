@@ -8,7 +8,7 @@
 void random_id(char *str);
 int create_shm_file(void);
 int allocate_shm_file(size_t size);
-struct wl_buffer* draw_frame(struct globox* globox);
+bool allocate_buffer(struct globox* globox);
 void wl_buffer_release(void *data, struct wl_buffer *wl_buffer);
 void xdg_surface_configure(
 	void *data,

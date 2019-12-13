@@ -83,16 +83,15 @@ int allocate_shm_file(size_t size)
     return fd;
 }
 
-struct wl_buffer* draw_frame(struct globox* globox)
+bool allocate_buffer(struct globox* globox)
 {
     int stride = globox->width * 4;
     int size = stride * globox->height;
-
     int fd = allocate_shm_file(size);
 
     if (fd == -1)
 	{
-        return NULL;
+        return false;
     }
 
     globox->argb = mmap(
@@ -110,23 +109,22 @@ struct wl_buffer* draw_frame(struct globox* globox)
         return NULL;
     }
 
-    struct wl_shm_pool *pool = wl_shm_create_pool(
+	globox->wl_buffer_fd = fd;
+
+    globox->wl_pool = wl_shm_create_pool(
 		globox->wl_shm,
 		fd,
 		size);
 
-    struct wl_buffer *buffer = wl_shm_pool_create_buffer(
-		pool,
+    globox->wl_buffer = wl_shm_pool_create_buffer(
+		globox->wl_pool,
 		0,
 		globox->width,
 		globox->height,
 		stride,
 		WL_SHM_FORMAT_XRGB8888);
 
-    wl_shm_pool_destroy(pool);
-    close(fd);
-
-    return buffer;
+	return true;
 }
 
 // callbacks
@@ -143,7 +141,7 @@ void xdg_surface_configure(
     struct globox* globox = data;
     xdg_surface_ack_configure(xdg_surface, serial);
 
-    struct wl_buffer *buffer = draw_frame(globox);
+    struct wl_buffer *buffer = globox->wl_buffer;
     wl_surface_attach(globox->wl_surface, buffer, 0, 0);
 }
 
@@ -209,7 +207,7 @@ void wl_surface_frame_done(
 	uint32_t time)
 {
 	static const uint64_t one = 1;
-	struct globox* globox = (struct globox*) data;
+	struct globox* globox = data;
 
 	wl_callback_destroy(frame_callback);
 	globox->wl_frame_callback = wl_surface_frame(globox->wl_surface);

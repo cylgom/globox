@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/eventfd.h>
+#include <sys/mman.h>
 #include <unistd.h>
 #include "xdg-shell-client-protocol.h"
 #include "wayland.h"
@@ -21,6 +22,8 @@ inline bool globox_open(
 	uint32_t height,
 	bool frame_event)
 {
+	bool err;
+
 	globox->init_x = x;
 	globox->init_y = y;
 	globox->width = width;
@@ -54,6 +57,12 @@ inline bool globox_open(
     globox->xdg_surface = xdg_wm_base_get_xdg_surface(
 		globox->xdg_wm_base,
 		globox->wl_surface);
+	err = allocate_buffer(globox);
+
+	if (!err)
+	{
+		return false;
+	}
 
     xdg_surface_add_listener(
 		globox->xdg_surface,
@@ -87,6 +96,12 @@ inline bool globox_open(
 
 inline void globox_close(struct globox* globox)
 {
+	int stride = globox->width * 4;
+	int size = stride * globox->height;
+
+	wl_shm_pool_destroy(globox->wl_pool);
+	close(globox->wl_buffer_fd);
+	munmap(globox->argb, size);
 
 	if (globox->frame_event)
 	{
