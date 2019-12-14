@@ -122,11 +122,24 @@ inline void globox_close(struct globox* globox)
 	wl_shm_pool_destroy(globox->wl_pool);
 	close(globox->wl_buffer_fd);
 	munmap(globox->argb, size);
+	wl_buffer_destroy(globox->wl_buffer);
 
 	if (globox->frame_event)
 	{
 		close(globox->fd_frame);
 	}
+
+	free(globox->title);
+	free(globox->wl_shm);
+	free(globox->wl_compositor);
+	free(globox->xdg_wm_base);
+	free(globox->wl_output);
+	wl_surface_destroy(globox->wl_surface);
+	xdg_surface_destroy(globox->xdg_surface);
+	xdg_toplevel_destroy(globox->xdg_toplevel);
+	wl_registry_destroy(globox->wl_registry);
+	wl_callback_destroy(globox->wl_frame_callback);
+	wl_display_disconnect(globox->wl_display);
 }
 
 inline bool globox_handle_events(struct globox* globox)

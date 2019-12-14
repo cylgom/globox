@@ -139,9 +139,7 @@ void xdg_surface_configure(
 {
     struct globox* globox = data;
     xdg_surface_ack_configure(xdg_surface, serial);
-
-    struct wl_buffer *buffer = globox->wl_buffer;
-    wl_surface_attach(globox->wl_surface, buffer, 0, 0);
+    wl_surface_attach(globox->wl_surface, globox->wl_buffer, 0, 0);
 }
 
 void xdg_wm_base_ping(
@@ -254,6 +252,7 @@ void xdg_toplevel_configure(
 		wl_shm_pool_destroy(globox->wl_pool);
 		close(globox->wl_buffer_fd);
 		munmap(globox->argb, globox->buf_width * globox->buf_height * 4);
+		wl_buffer_destroy(globox->wl_buffer);
 
 		globox->buf_width = (1 + (width / globox->wl_screen_width))
 			* globox->wl_screen_width;
@@ -264,6 +263,7 @@ void xdg_toplevel_configure(
 	}
 	else
 	{
+		wl_buffer_destroy(globox->wl_buffer);
 		globox->wl_buffer = wl_shm_pool_create_buffer(
 			globox->wl_pool,
 			0,
@@ -276,7 +276,7 @@ void xdg_toplevel_configure(
 
 void xdg_toplevel_close(
 	void *data,
-	struct xdg_toplevel *toplevel)
+	struct xdg_toplevel *xdg_toplevel)
 {
 	struct globox* globox = data;
 	globox->closed = true;

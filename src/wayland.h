@@ -40,7 +40,7 @@ void xdg_toplevel_configure(
 	struct wl_array *states);
 void xdg_toplevel_close(
 	void *data,
-	struct xdg_toplevel *toplevel);
+	struct xdg_toplevel *xdg_toplevel);
 void wl_output_geometry(
 	void *data,
 	struct wl_output *wl_output,
