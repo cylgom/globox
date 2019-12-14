@@ -85,8 +85,7 @@ int allocate_shm_file(size_t size)
 
 bool allocate_buffer(struct globox* globox)
 {
-    int stride = globox->buf_width * 4;
-    int size = stride * globox->buf_height;
+    int size = globox->buf_width * globox->buf_height * 4;
     int fd = allocate_shm_file(size);
 
     if (fd == -1)
@@ -119,9 +118,9 @@ bool allocate_buffer(struct globox* globox)
     globox->wl_buffer = wl_shm_pool_create_buffer(
 		globox->wl_pool,
 		0,
-		globox->buf_width,
-		globox->buf_height,
-		stride,
+		globox->width,
+		globox->height,
+		globox->width * 4,
 		WL_SHM_FORMAT_XRGB8888);
 
 	return true;
@@ -247,29 +246,32 @@ void xdg_toplevel_configure(
 		return;
 	}
 
-#if 0
+	globox->width = width;
+	globox->height = height;
+
 	if ((globox->buf_width * globox->buf_height) < (uint32_t) (width * height))
-#endif
-	if (true)
 	{
 		wl_shm_pool_destroy(globox->wl_pool);
 		close(globox->wl_buffer_fd);
 		munmap(globox->argb, globox->buf_width * globox->buf_height * 4);
 
-#if 0
 		globox->buf_width = (1 + (width / globox->wl_screen_width))
 			* globox->wl_screen_width;
 		globox->buf_height = (1 + (height / globox->wl_screen_height))
 			* globox->wl_screen_height;
-#endif
-		globox->buf_width = width;
-		globox->buf_height = height;
 
 		allocate_buffer(globox);
 	}
-
-	globox->width = width;
-	globox->height = height;
+	else
+	{
+		globox->wl_buffer = wl_shm_pool_create_buffer(
+			globox->wl_pool,
+			0,
+			globox->width,
+			globox->height,
+			globox->width * 4,
+			WL_SHM_FORMAT_XRGB8888);
+	}
 }
 
 void xdg_toplevel_close(

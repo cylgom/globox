@@ -136,7 +136,16 @@ inline bool globox_handle_events(struct globox* globox)
 
 inline bool globox_shrink(struct globox* globox)
 {
-	return false;
+	wl_shm_pool_destroy(globox->wl_pool);
+	close(globox->wl_buffer_fd);
+	munmap(globox->argb, globox->buf_width * globox->buf_height * 4);
+
+	globox->buf_width = globox->width;
+	globox->buf_height = globox->height;
+
+	allocate_buffer(globox);
+
+	return true;
 }
 
 inline void globox_copy(
