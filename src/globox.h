@@ -132,7 +132,6 @@ void globox_prepoll(
 void globox_set_icon(struct globox* globox, uint32_t* bgra, uint32_t len);
 void globox_set_title(struct globox* globox, const char* title);
 void globox_set_state(struct globox* globox, enum globox_state state);
-bool globox_set_size(struct globox* globox, uint32_t width, uint32_t height);
 
 // getters
 char* globox_get_title(struct globox* globox);

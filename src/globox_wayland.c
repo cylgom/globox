@@ -231,11 +231,6 @@ inline void globox_set_state(struct globox* globox, enum globox_state state)
 	globox->state = state;
 }
 
-inline bool globox_set_size(struct globox* globox, uint32_t width, uint32_t height)
-{
-	return false;
-}
-
 inline char* globox_get_title(struct globox* globox)
 {
 	return globox->title;

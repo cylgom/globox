@@ -487,32 +487,6 @@ inline void globox_set_state(struct globox* globox, enum globox_state state)
 	globox->state = state;
 }
 
-// ask the server to resize the window
-inline bool globox_set_size(struct globox* globox, uint32_t width, uint32_t height)
-{
-	uint32_t values[2] = {width, height};
-
-	// we know the window will be resized so we can
-	// execute globox_reserve now to try to allocate
-	// the required resources as soon as possible and
-	// reduce artifacts on weird desktop environments
-	bool ret = globox_reserve(globox, width, height);
-
-	if (ret)
-	{
-		xcb_configure_window(
-			globox->x11_conn,
-			globox->x11_win,
-			XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
-			values);
-	}
-
-	globox->width = width;
-	globox->height = height;
-
-	return ret;
-}
-
 inline char* globox_get_title(struct globox* globox)
 {
 	return globox->title;
