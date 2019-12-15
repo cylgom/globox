@@ -56,6 +56,12 @@ inline bool globox_open(
 
 	// init
 	globox->wl_display = wl_display_connect(NULL);
+
+	if (globox->wl_display == NULL)
+	{
+		return false;
+	}
+
 	globox->fd = wl_display_get_fd(globox->wl_display);
 	globox->wl_registry = wl_display_get_registry(globox->wl_display);
 	wl_registry_add_listener(
