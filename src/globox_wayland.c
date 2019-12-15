@@ -33,9 +33,10 @@ inline bool globox_open(
 	globox->redraw = true;
 	globox->frame_event = frame_event;
 	globox->closed = false;
-
 	globox->wl_icon = NULL;
 	globox->wl_icon_len = 0;
+	globox->wl_screen_width = 1920;
+	globox->wl_screen_height = 1080;
 
 	// callbacks
 	globox->wl_buffer_listener.release = wl_buffer_release;
@@ -48,38 +49,25 @@ inline bool globox_open(
 	globox->wl_registry_listener.global = registry_global;
 	globox->wl_registry_listener.global_remove = registry_global_remove;
 
-	// screen default
-	globox->wl_screen_width = 1920;
-	globox->wl_screen_height = 1080;
+	// surface callbacks
+	globox->wl_surface_frame_listener.done = wl_surface_frame_done;
+	globox->xdg_toplevel_listener.configure = xdg_toplevel_configure;
+	globox->xdg_toplevel_listener.close = xdg_toplevel_close;
 
-	// regular initialization
+	// init
 	globox->wl_display = wl_display_connect(NULL);
 	globox->fd = wl_display_get_fd(globox->wl_display);
-    globox->wl_registry = wl_display_get_registry(globox->wl_display);
-    wl_registry_add_listener(
+	globox->wl_registry = wl_display_get_registry(globox->wl_display);
+	wl_registry_add_listener(
 		globox->wl_registry,
 		&(globox->wl_registry_listener),
 		globox);
-    wl_display_roundtrip(globox->wl_display);
+	wl_display_roundtrip(globox->wl_display);
 
-    globox->wl_surface = wl_compositor_create_surface(globox->wl_compositor);
-    globox->xdg_surface = xdg_wm_base_get_xdg_surface(
-		globox->xdg_wm_base,
-		globox->wl_surface);
-	err = allocate_buffer(globox);
+	// surface init
+	err = surface_init(globox);
 
-	if (!err)
-	{
-		return false;
-	}
-
-    xdg_surface_add_listener(
-		globox->xdg_surface,
-		&(globox->xdg_surface_listener),
-		globox);
-
-    globox->xdg_toplevel = xdg_surface_get_toplevel(globox->xdg_surface);
-
+	// post-surface creation init
 	globox->title = NULL;
 	globox_set_title(globox, title);
 	globox_set_state(globox, state);
@@ -89,35 +77,12 @@ inline bool globox_open(
 		globox->fd_frame = eventfd(0, 0);
 	}
 
-	wl_surface_commit(globox->wl_surface);
-
-	// register surface events
-	globox->wl_surface_frame_listener.done = wl_surface_frame_done;
-	globox->wl_frame_callback = wl_surface_frame(globox->wl_surface);
-	wl_callback_add_listener(
-		globox->wl_frame_callback,
-		&(globox->wl_surface_frame_listener),
-		globox);
-
-		wl_display_dispatch(globox->wl_display);
-		globox_copy(globox, 0, 0, globox->width, globox->height);
-
-	// register window events (resize, close, etc)
-	globox->xdg_toplevel_listener.configure = xdg_toplevel_configure;
-	globox->xdg_toplevel_listener.close = xdg_toplevel_close;
-
-	xdg_toplevel_add_listener(
-		globox->xdg_toplevel,
-		&(globox->xdg_toplevel_listener),
-		globox);
-
-	return true;
+	return err;
 }
 
 inline void globox_close(struct globox* globox)
 {
-	int stride = globox->width * 4;
-	int size = stride * globox->height;
+	int size = globox->width * globox->height * 4;
 
 	wl_shm_pool_destroy(globox->wl_pool);
 	close(globox->wl_buffer_fd);
@@ -134,11 +99,13 @@ inline void globox_close(struct globox* globox)
 	free(globox->wl_compositor);
 	free(globox->xdg_wm_base);
 	free(globox->wl_output);
+
 	wl_surface_destroy(globox->wl_surface);
 	xdg_surface_destroy(globox->xdg_surface);
 	xdg_toplevel_destroy(globox->xdg_toplevel);
-	wl_registry_destroy(globox->wl_registry);
 	wl_callback_destroy(globox->wl_frame_callback);
+
+	wl_registry_destroy(globox->wl_registry);
 	wl_display_disconnect(globox->wl_display);
 }
 
@@ -205,6 +172,63 @@ inline void globox_set_title(struct globox* globox, const char* title)
 
 inline void globox_set_state(struct globox* globox, enum globox_state state)
 {
+	switch (state)
+	{
+		case GLOBOX_STATE_REGULAR:
+		{
+			xdg_toplevel_unset_maximized(globox->xdg_toplevel);
+			xdg_toplevel_unset_fullscreen(globox->xdg_toplevel);
+
+			// ladies and gentlemen
+			if (globox->state == GLOBOX_STATE_MINIMIZED)
+			{
+				int size = globox->width * globox->height * 4;
+				char* title = globox->title;
+
+				wl_shm_pool_destroy(globox->wl_pool);
+				close(globox->wl_buffer_fd);
+				munmap(globox->argb, size);
+				wl_buffer_destroy(globox->wl_buffer);
+
+				wl_surface_destroy(globox->wl_surface);
+				xdg_surface_destroy(globox->xdg_surface);
+				xdg_toplevel_destroy(globox->xdg_toplevel);
+				wl_callback_destroy(globox->wl_frame_callback);
+
+				surface_init(globox);
+
+				globox->title = NULL;
+				globox_set_title(globox, title);
+				free(title);
+			}
+
+			break;
+		}
+		case GLOBOX_STATE_MAXIMIZED:
+		{
+			xdg_toplevel_unset_fullscreen(globox->xdg_toplevel);
+			xdg_toplevel_set_maximized(globox->xdg_toplevel);
+
+			break;
+		}
+		case GLOBOX_STATE_MINIMIZED:
+		{
+			xdg_toplevel_unset_maximized(globox->xdg_toplevel);
+			xdg_toplevel_unset_fullscreen(globox->xdg_toplevel);
+			xdg_toplevel_set_minimized(globox->xdg_toplevel);
+
+			break;
+		}
+		case GLOBOX_STATE_FULLSCREEN:
+		{
+			xdg_toplevel_unset_maximized(globox->xdg_toplevel);
+			xdg_toplevel_set_fullscreen(globox->xdg_toplevel, NULL);
+
+			break;
+		}
+	}
+
+	globox->state = state;
 }
 
 inline bool globox_set_size(struct globox* globox, uint32_t width, uint32_t height)

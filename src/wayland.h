@@ -5,6 +5,7 @@
 #include "xdg-shell-client-protocol.h"
 #include <wayland-client.h>
 
+bool surface_init(struct globox* globox);
 void random_id(char *str);
 int create_shm_file(void);
 int allocate_shm_file(size_t size);

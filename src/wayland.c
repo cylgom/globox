@@ -17,6 +17,50 @@
 #include "xdg-shell-client-protocol.h"
 #include "globox.h"
 
+inline bool surface_init(struct globox* globox)
+{
+	// surface init
+	bool err;
+
+	globox->wl_surface = wl_compositor_create_surface(globox->wl_compositor);
+	globox->xdg_surface = xdg_wm_base_get_xdg_surface(
+		globox->xdg_wm_base,
+		globox->wl_surface);
+	err = allocate_buffer(globox);
+
+	if (!err)
+	{
+		return false;
+	}
+
+	xdg_surface_add_listener(
+		globox->xdg_surface,
+		&(globox->xdg_surface_listener),
+		globox);
+
+	globox->xdg_toplevel = xdg_surface_get_toplevel(globox->xdg_surface);
+
+	wl_surface_commit(globox->wl_surface);
+
+	// register surface events
+	globox->wl_frame_callback = wl_surface_frame(globox->wl_surface);
+	wl_callback_add_listener(
+		globox->wl_frame_callback,
+		&(globox->wl_surface_frame_listener),
+		globox);
+
+	wl_display_dispatch(globox->wl_display);
+	globox_copy(globox, 0, 0, globox->width, globox->height);
+
+	// register window events (resize, close, etc)
+	xdg_toplevel_add_listener(
+		globox->xdg_toplevel,
+		&(globox->xdg_toplevel_listener),
+		globox);
+
+	return true;
+}
+
 inline void random_id(char *str)
 {
     struct timespec time;
