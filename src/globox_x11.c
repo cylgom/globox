@@ -43,13 +43,6 @@ inline bool globox_open(
 	// connect to server
 	globox->x11_conn = xcb_connect(NULL, &(globox->x11_screen));
 	globox->fd = xcb_get_file_descriptor(globox->x11_conn);
-
-	// provide ewmh-dependant functions
-	if (!init_atoms(globox))
-	{
-		return false;
-	}
-
 	xcb_screen_t* screen = get_screen(globox);
 
 	// create the window
@@ -123,6 +116,12 @@ inline bool globox_open(
 	globox_set_title(globox, title);
 	globox_set_state(globox, state);
 	set_frame_timer(globox);
+
+	// provide ewmh-dependant functions
+	if (!init_atoms(globox))
+	{
+		return false;
+	}
 
 	return true;
 }
@@ -216,6 +215,19 @@ inline bool globox_handle_events(struct globox* globox)
 						state = NULL;
 					}
 				}
+
+				break;
+			}
+			case XCB_CLIENT_MESSAGE:
+			{
+				xcb_client_message_event_t* delete = (xcb_client_message_event_t*) event;
+
+				if (delete->data.data32[0] == globox->x11_atoms[ATOM_DELETE_WINDOW])
+				{
+					globox->closed = true;
+				}
+
+				free(delete);
 
 				break;
 			}

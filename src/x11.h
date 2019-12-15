@@ -12,6 +12,8 @@ enum x11_atom_types
 	ATOM_STATE_HIDDEN,
 	ATOM_STATE,
 	ATOM_ICON,
+	ATOM_PROTOCOLS,
+	ATOM_DELETE_WINDOW,
 	ATOM_COUNT // used to get size
 };
 

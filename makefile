@@ -17,7 +17,7 @@ INCL+= -I$(INCD)
 SRCS = $(SRCD)/main_callback.c
 SRCS_OBJS = $(OBJD)/$(RESD)/iconpix.o
 
-#BACKEND ?= x11
+BACKEND ?= x11
 
 # x11
 ifeq ($(BACKEND), x11)

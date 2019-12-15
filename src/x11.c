@@ -20,6 +20,7 @@ inline bool init_atoms(struct globox* globox)
 	xcb_intern_atom_cookie_t cookie;
 	xcb_intern_atom_reply_t* reply;
 	xcb_generic_error_t* error;
+	uint8_t replace;
 	char* atoms_names[ATOM_COUNT] =
 	{
 		"_NET_WM_STATE_MAXIMIZED_HORZ",
@@ -28,13 +29,24 @@ inline bool init_atoms(struct globox* globox)
 		"_NET_WM_STATE_HIDDEN",
 		"_NET_WM_STATE",
 		"_NET_WM_ICON",
+		"WM_PROTOCOLS",
+		"WM_DELETE_WINDOW",
 	};
 
-	for(uint8_t i = 0; i < ATOM_COUNT; ++i)
+	for (uint8_t i = 0; i < ATOM_COUNT; ++i)
 	{
+		if (i == ATOM_PROTOCOLS)
+		{
+			replace = 1;
+		}
+		else
+		{
+			replace = 0;
+		}
+
 		cookie = xcb_intern_atom(
 			globox->x11_conn,
-			0,
+			replace,
 			strlen(atoms_names[i]),
 			atoms_names[i]);
 
@@ -54,6 +66,16 @@ inline bool init_atoms(struct globox* globox)
 
 		free(reply);
 	}
+
+	xcb_change_property(
+		globox->x11_conn,
+		XCB_PROP_MODE_REPLACE,
+		globox->x11_win,
+		globox->x11_atoms[ATOM_PROTOCOLS],
+		4,
+		32,
+		1,
+		&(globox->x11_atoms[ATOM_DELETE_WINDOW]));
 
 	return true;
 }
