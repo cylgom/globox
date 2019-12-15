@@ -290,6 +290,7 @@ void xdg_toplevel_configure(
 
 	globox->width = width;
 	globox->height = height;
+	globox->redraw = true;
 
 	if ((globox->buf_width * globox->buf_height) < (uint32_t) (width * height))
 	{

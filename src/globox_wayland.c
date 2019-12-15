@@ -137,6 +137,7 @@ inline void globox_copy(
 {
 	wl_surface_damage_buffer(globox->wl_surface, x, y, width, height);
 	globox_commit(globox);
+	globox->redraw = false;
 }
 
 inline void globox_commit(
