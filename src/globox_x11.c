@@ -215,6 +215,10 @@ inline bool globox_handle_events(struct globox* globox)
 						state = NULL;
 					}
 				}
+				else
+				{
+					free(event);
+				}
 
 				break;
 			}
