@@ -3,24 +3,13 @@
 
 #include "globox.h"
 #include <xcb/xcb.h>
-
-enum x11_atom_types
-{
-	ATOM_STATE_MAXIMIZED_HORZ = 0,
-	ATOM_STATE_MAXIMIZED_VERT,
-	ATOM_STATE_FULLSCREEN,
-	ATOM_STATE_HIDDEN,
-	ATOM_STATE,
-	ATOM_ICON,
-	ATOM_PROTOCOLS,
-	ATOM_DELETE_WINDOW,
-	ATOM_COUNT // used to get size
-};
+#include "x11_helpers.h"
 
 bool init_atoms(struct globox* globox);
 xcb_screen_t* get_screen(struct globox* globox);
 void create_window(struct globox* globox, xcb_screen_t* screen);
 void create_gfx(struct globox* globox, xcb_screen_t* screen);
+void create_glx(struct globox* globox);
 bool visual_compatible(struct globox* globox, xcb_screen_t* screen);
 bool buffer_socket(struct globox* globox);
 void buffer_shm(struct globox* globox);

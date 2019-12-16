@@ -7,11 +7,20 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ipc.h>
-#include <sys/shm.h>
 #include <sys/timerfd.h>
 #include <xcb/randr.h>
-#include <xcb/shm.h>
 #include <xcb/xcb.h>
+
+#ifdef GLOBOX_RENDER_SWR
+#include <sys/shm.h>
+#include <xcb/shm.h>
+#endif
+
+#ifdef GLOBOX_RENDER_OGL
+#include <X11/Xlib.h>
+#include <GL/glx.h>
+#endif
+
 #include "globox.h"
 
 // get access to _NET_WM atoms without using ewmh
@@ -94,16 +103,37 @@ inline xcb_screen_t* get_screen(struct globox* globox)
 	return iter.data;
 }
 
+#ifdef GLOBOX_RENDER_OGL
+static int visual_attribs[] =
+{
+	GLX_X_RENDERABLE, True,
+	GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
+	GLX_RENDER_TYPE, GLX_RGBA_BIT,
+	GLX_X_VISUAL_TYPE, GLX_TRUE_COLOR,
+	GLX_RED_SIZE, 8,
+	GLX_GREEN_SIZE, 8,
+	GLX_BLUE_SIZE, 8,
+	GLX_ALPHA_SIZE, 8,
+	GLX_DEPTH_SIZE, 24,
+	GLX_STENCIL_SIZE, 8,
+	GLX_DOUBLEBUFFER, True,
+	None
+};
+#endif
+
 // we use a pixmap background instead of a plain color
 // to work around resizing artifacts on some desktop environments
+//
+// NTS: The XFCE background pixmap glitch can't be addressed
+// and is present everywhere, even in firefox and xfce4-terminal.
+// Since this is fucking X11 and the issue is minor anyway
+// it is probably better left as-is.
 inline void create_window(struct globox* globox, xcb_screen_t* screen)
 {
-	// NTS
-	// The XFCE background pixmap glitch can't be addressed
-	// and is present everywhere, even in firefox and xfce4-terminal.
-	// Since this is fucking X11 and the issue is minor anyway
-	// it is probably better left as-is.
-	uint32_t values[2] =
+#ifdef GLOBOX_RENDER_SWR
+	xcb_visualid_t visual_id = screen->root_visual;
+
+	uint32_t value_list[2] =
 	{
 		XCB_BACK_PIXMAP_NONE,
 		XCB_EVENT_MASK_EXPOSURE
@@ -111,9 +141,74 @@ inline void create_window(struct globox* globox, xcb_screen_t* screen)
 		| XCB_EVENT_MASK_PROPERTY_CHANGE,
 	};
 
-	globox->x11_win = xcb_generate_id(globox->x11_conn);
+	uint32_t value_mask =
+		XCB_CW_BACK_PIXMAP
+		| XCB_CW_EVENT_MASK;
+#endif
 
-	xcb_visualid_t root_visual = screen->root_visual;
+#ifdef GLOBOX_RENDER_OGL
+	// get available framebuffer configurations
+	int fb_config_count;
+	GLXFBConfig *fb_config_list = glXChooseFBConfig(
+		globox->xlib_display,
+		globox->x11_screen,
+		visual_attribs,
+		&fb_config_count);
+
+	if ((fb_config_list == NULL) || (fb_config_count == 0))
+	{
+		// TODO: error
+		return;
+	}
+
+	// query visual ID
+	int visual_id;
+	globox->xlib_fb_config = fb_config_list[0];
+
+	glXGetFBConfigAttrib(
+		globox->xlib_display,
+		globox->xlib_fb_config,
+		GLX_VISUAL_ID,
+		&visual_id);
+
+	// create OGL context
+	globox->xlib_context = glXCreateNewContext(
+		globox->xlib_display,
+		globox->xlib_fb_config,
+		GLX_RGBA_TYPE,
+		NULL,
+		True);
+
+	if (globox->xlib_context == NULL)
+	{
+		// TODO: error
+		return;
+	}
+
+	xcb_colormap_t colormap = xcb_generate_id(globox->x11_conn);
+	xcb_create_colormap(
+		globox->x11_conn,
+		XCB_COLORMAP_ALLOC_NONE,
+		colormap,
+		screen->root,
+		visual_id);
+
+	uint32_t value_list[3] =
+	{
+		XCB_BACK_PIXMAP_NONE,
+		XCB_EVENT_MASK_EXPOSURE
+		| XCB_EVENT_MASK_STRUCTURE_NOTIFY
+		| XCB_EVENT_MASK_PROPERTY_CHANGE,
+		colormap,
+	};
+
+	uint32_t value_mask =
+		XCB_CW_BACK_PIXMAP
+		| XCB_CW_EVENT_MASK
+		| XCB_CW_COLORMAP;
+#endif
+
+	globox->x11_win = xcb_generate_id(globox->x11_conn);
 
 	xcb_create_window(
 		globox->x11_conn,
@@ -126,13 +221,14 @@ inline void create_window(struct globox* globox, xcb_screen_t* screen)
 		globox->height,
 		0,
 		XCB_WINDOW_CLASS_INPUT_OUTPUT,
-		root_visual,
-		XCB_CW_BACK_PIXMAP | XCB_CW_EVENT_MASK,
-		values);
+		visual_id,
+		value_mask,
+		value_list);
 }
 
 inline void create_gfx(struct globox* globox, xcb_screen_t* screen)
 {
+#ifdef GLOBOX_RENDER_SWR
 	uint32_t values[2] =
 	{
 		screen->black_pixel,
@@ -147,6 +243,40 @@ inline void create_gfx(struct globox* globox, xcb_screen_t* screen)
 		globox->x11_win,
 		XCB_GC_FOREGROUND | XCB_GC_GRAPHICS_EXPOSURES,
 		values);
+#endif
+}
+
+inline void create_glx(struct globox* globox)
+{
+#ifdef GLOBOX_RENDER_OGL
+	globox->xlib_glx = glXCreateWindow(
+		globox->xlib_display,
+		globox->xlib_fb_config,
+		globox->x11_win,
+		NULL);
+
+	if (globox->x11_win == 0)
+	{
+		xcb_destroy_window(globox->x11_conn, globox->x11_win);
+		glXDestroyContext(globox->xlib_display, globox->xlib_context);
+
+		// TODO: error
+		return;
+	}
+
+	if (!glXMakeContextCurrent(
+		globox->xlib_display,
+		globox->xlib_glx,
+		globox->xlib_glx,
+		globox->xlib_context))
+	{
+		xcb_destroy_window(globox->x11_conn, globox->x11_win);
+		glXDestroyContext(globox->xlib_display, globox->xlib_context);
+
+		// TODO:error
+		return;
+	}
+#endif
 }
 
 // check if the given screen offers a compatible mode
@@ -194,6 +324,7 @@ inline bool visual_compatible(struct globox* globox, xcb_screen_t* screen)
 // classic pixmap allocation based on malloc
 inline bool buffer_socket(struct globox* globox)
 {
+#ifdef GLOBOX_RENDER_SWR
 	// transfer the data using a socket
 	globox->x11_socket = true;
 	// I have some bad news
@@ -214,6 +345,7 @@ inline bool buffer_socket(struct globox* globox)
 		globox->x11_win,
 		globox->width,
 		globox->height);
+#endif
 
 	return true;
 }
@@ -221,6 +353,7 @@ inline bool buffer_socket(struct globox* globox)
 // better buffer allocation based on shared-memory
 inline void buffer_shm(struct globox* globox)
 {
+#ifdef GLOBOX_RENDER_SWR
 	// create the shared memory buffer
 	globox->x11_socket = false;
 	globox->x11_shm.shmid = shmget(
@@ -247,6 +380,7 @@ inline void buffer_shm(struct globox* globox)
 		24, // force 24bpp instead of geometry->depth
 		globox->x11_shm.shmseg,
 		0);
+#endif
 }
 
 // will loose all buffer information when resizing
@@ -255,6 +389,7 @@ inline bool globox_reserve(
 	uint32_t width,
 	uint32_t height)
 {
+#ifdef GLOBOX_RENDER_SWR
 	if (globox->x11_socket)
 	{
 		if ((globox->buf_width * globox->buf_height) < (width * height))
@@ -327,6 +462,11 @@ inline bool globox_reserve(
 	globox->x11_pixmap_update = true;
 
 	return (globox->argb != NULL);
+#endif
+
+#ifdef GLOBOX_RENDER_OGL
+	return true;
+#endif
 }
 
 // updates the internal title to reflect the actual window title
@@ -426,6 +566,7 @@ inline void handle_state(struct globox* globox)
 
 inline void handle_expose(struct globox* globox, uint32_t* arr, uint8_t cur)
 {
+#ifdef GLOBOX_RENDER_SWR
 	for (uint8_t i = 0; i < cur; ++i)
 	{
 		globox_copy(
@@ -435,6 +576,11 @@ inline void handle_expose(struct globox* globox, uint32_t* arr, uint8_t cur)
 			arr[(4 * i) + 2],
 			arr[(4 * i) + 3]);
 	}
+#endif
+
+#ifdef GLOBOX_RENDER_OGL
+	glXSwapBuffers(globox->xlib_display, globox->xlib_glx);
+#endif
 }
 
 // ask the server to change the window state

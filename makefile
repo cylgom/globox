@@ -14,25 +14,39 @@ RESD = res
 
 INCL = -I$(SRCD)
 INCL+= -I$(INCD)
-SRCS = $(SRCD)/main_callback.c
+SRCS =
 SRCS_OBJS = $(OBJD)/$(RESD)/iconpix.o
+LINK =
 
-#BACKEND ?= x11
+RENDER ?= ogl
+BACKEND ?= x11
+
+# software
+ifeq ($(RENDER), swr)
+FLAGS+= -DGLOBOX_RENDER_SWR
+SRCS+= $(SRCD)/main_callback.c
+endif
+
+# opengl
+ifeq ($(RENDER), ogl)
+FLAGS+= -DGLOBOX_RENDER_OGL
+SRCS+= $(SRCD)/main_ogl.c
+LINK+= -lX11 -lX11-xcb -lGL
+endif
 
 # x11
 ifeq ($(BACKEND), x11)
-
 FLAGS+= -DGLOBOX_X11
 SRCS+= $(SRCD)/x11.c
 SRCS+= $(SRCD)/globox_x11.c
-LINK = -lxcb -lxcb-shm -lxcb-randr -lrt
+LINK+= -lxcb -lxcb-shm -lxcb-randr -lrt
 
 .PHONY: final
 final: $(BIND)/$(NAME)
+endif
 
 # wayland
-else
-
+ifeq ($(BACKEND), wayland)
 FLAGS+= -DGLOBOX_WAYLAND
 SRCS+= $(SRCD)/wayland.c
 SRCS+= $(SRCD)/globox_wayland.c
@@ -41,7 +55,6 @@ LINK = -lwayland-client -lrt
 
 .PHONY: final
 final: | $(INCD) $(BIND)/$(NAME)
-
 endif
 
 # objects listing

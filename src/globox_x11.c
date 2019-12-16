@@ -7,10 +7,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ipc.h>
-#include <sys/shm.h>
 #include <sys/timerfd.h>
-#include <xcb/shm.h>
 #include "x11.h"
+
+#ifdef GLOBOX_RENDER_SWR
+#include <sys/shm.h>
+#include <xcb/shm.h>
+#endif
+
+#ifdef GLOBOX_RENDER_OGL
+#include <X11/Xlib.h>
+#include <X11/Xlib-xcb.h>
+#include <GL/glx.h>
+#endif
 
 #define EXPOSE_QUEUE_LEN 10
 
@@ -41,16 +50,46 @@ inline bool globox_open(
 	}
 
 	// connect to server
+#ifdef GLOBOX_RENDER_SWR
 	globox->x11_conn = xcb_connect(NULL, &(globox->x11_screen));
+#endif
+
+#ifdef GLOBOX_RENDER_OGL
+	globox->xlib_display = XOpenDisplay(0);
+
+	if (!globox->xlib_display)
+	{
+		return false;
+	}
+
+	globox->x11_screen = DefaultScreen(globox->xlib_display);
+	globox->x11_conn = XGetXCBConnection(globox->xlib_display);
+
+	if (!globox->x11_conn)
+	{
+		XCloseDisplay(globox->xlib_display);
+		return false;
+	}
+
+	XSetEventQueueOwner(globox->xlib_display, XCBOwnsEventQueue);
+#endif
+
 	globox->fd = xcb_get_file_descriptor(globox->x11_conn);
 	xcb_screen_t* screen = get_screen(globox);
 
 	// create the window
 	create_window(globox, screen);
+
+#ifdef GLOBOX_RENDER_SWR
 	create_gfx(globox, screen);
-	xcb_map_window(globox->x11_conn, globox->x11_win);
 	globox->x11_pixmap_update = false;
-	globox->x11_visible = true;
+#endif
+
+	xcb_map_window(globox->x11_conn, globox->x11_win);
+
+#ifdef GLOBOX_RENDER_OGL
+	create_glx(globox);
+#endif
 
 	// operations have no effect when the context is in failure state
 	// so we can check it after going through the whole process
@@ -69,6 +108,7 @@ inline bool globox_open(
 		return false;
 	}
 
+#ifdef GLOBOX_RENDER_SWR
 	// check display server settings compatibility
 	if (!visual_compatible(globox, screen))
 	{
@@ -111,6 +151,7 @@ inline bool globox_open(
 	{
 		return false;
 	}
+#endif
 
 	globox->title = NULL;
 	globox_set_title(globox, title);
@@ -128,6 +169,7 @@ inline bool globox_open(
 
 inline void globox_close(struct globox* globox)
 {
+#ifdef GLOBOX_RENDER_SWR
 	if (globox->x11_socket)
 	{
 		free(globox->argb);
@@ -140,9 +182,20 @@ inline void globox_close(struct globox* globox)
 		xcb_free_pixmap(globox->x11_conn, globox->x11_pix);
 		xcb_destroy_window(globox->x11_conn, globox->x11_win);
 	}
+#endif
+
+#ifdef GLOBOX_RENDER_OGL
+	glXDestroyWindow(globox->xlib_display, globox->xlib_glx);
+	xcb_destroy_window(globox->x11_conn, globox->x11_win);
+	glXDestroyContext(globox->xlib_display, globox->xlib_context);
+#endif
 
 	free(globox->title);
 	xcb_disconnect(globox->x11_conn);
+
+#ifdef GLOBOX_RENDER_OGL
+	XCloseDisplay(globox->xlib_display);
+#endif
 }
 
 // event queue processor with smart skipping for resizing and moving operations
@@ -250,7 +303,9 @@ inline bool globox_handle_events(struct globox* globox)
 	{
 		if (redraw)
 		{
+#ifdef GLOBOX_RENDER_SWR
 			ret = globox_reserve(globox, resize->width, resize->height);
+#endif
 
 			globox->redraw = true;
 			globox->width = resize->width;
@@ -278,6 +333,7 @@ inline bool globox_handle_events(struct globox* globox)
 
 inline bool globox_shrink(struct globox* globox)
 {
+#ifdef GLOBOX_RENDER_SWR
 	globox->buf_width = globox->width;
 	globox->buf_height = globox->height;
 
@@ -306,6 +362,11 @@ inline bool globox_shrink(struct globox* globox)
 	}
 
 	return (globox->argb != NULL);
+#endif
+
+#ifdef GLOBOX_RENDER_OGL
+	return true;
+#endif
 }
 
 // draw a part of the buffer on the screen
@@ -317,6 +378,7 @@ inline void globox_copy(
 	uint32_t width,
 	uint32_t height)
 {
+#ifdef GLOBOX_RENDER_SWR
 	if (globox->x11_socket)
 	{
 		int32_t y2 = y;
@@ -406,6 +468,12 @@ inline void globox_copy(
 		height);
 
 	xcb_flush(globox->x11_conn);
+#endif
+
+#ifdef GLOBOX_RENDER_OGL
+	glXSwapBuffers(globox->xlib_display, globox->xlib_glx);
+#endif
+
 	globox->redraw = false;
 }
 

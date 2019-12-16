@@ -5,9 +5,17 @@
 #include <stdbool.h>
 
 #ifdef GLOBOX_X11
+	#ifdef GLOBOX_RENDER_SWR
 #include <xcb/shm.h>
-#include <xcb/xcb.h>
 #include <xcb/xcb_image.h>
+	#endif
+
+	#ifdef GLOBOX_RENDER_OGL
+#include <GL/glx.h>
+	#endif
+
+#include <xcb/xcb.h>
+#include "x11_helpers.h"
 #endif
 
 #ifdef GLOBOX_WAYLAND
@@ -49,17 +57,25 @@ struct globox
 
 #ifdef GLOBOX_X11
 	xcb_connection_t* x11_conn;
+	xcb_atom_t x11_atoms[ATOM_COUNT];
 	xcb_window_t x11_win;
 	int x11_screen;
 
+	#ifdef GLOBOX_RENDER_OGL
+	Display *xlib_display;
+	int xlib_screen;
+	GLXFBConfig xlib_fb_config;
+	GLXContext xlib_context;
+	GLXWindow xlib_glx;
+	#endif
+
+	#ifdef GLOBOX_RENDER_SWR
 	xcb_shm_segment_info_t x11_shm;
 	xcb_gcontext_t x11_gfx;
 	xcb_pixmap_t x11_pix;
 	bool x11_socket;
 	bool x11_pixmap_update;
-	bool x11_visible;
-
-	xcb_atom_t x11_atoms[6];
+	#endif
 #endif
 
 #ifdef GLOBOX_WAYLAND
