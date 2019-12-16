@@ -124,7 +124,7 @@ inline void create_window(struct globox* globox, xcb_screen_t* screen)
 		globox->init_y,
 		globox->width,
 		globox->height,
-		0, // TODO window class
+		0,
 		XCB_WINDOW_CLASS_INPUT_OUTPUT,
 		root_visual,
 		XCB_CW_BACK_PIXMAP | XCB_CW_EVENT_MASK,

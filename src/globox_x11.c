@@ -416,7 +416,7 @@ inline void globox_commit(struct globox* globox)
 
 inline void globox_prepoll(struct globox* globox)
 {
-	// TODO
+	// not used ATM
 }
 
 // direct icon change
