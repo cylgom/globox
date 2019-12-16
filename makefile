@@ -2,7 +2,7 @@ NAME = globox
 CC = gcc
 FLAGS = -std=c99 -pedantic -g
 FLAGS+= -Wall -Wno-unused-parameter -Wextra -Werror=vla -Werror
-VALGRIND = --show-leak-kinds=all --track-origins=yes --leak-check=full
+VALGRIND = --show-leak-kinds=all --track-origins=yes --leak-check=full --suppressions=../res/valgrind.supp
 CMD = ./$(NAME)
 
 BIND = bin

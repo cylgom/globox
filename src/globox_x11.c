@@ -191,7 +191,10 @@ inline void globox_close(struct globox* globox)
 #endif
 
 	free(globox->title);
+
+#ifdef GLOBOX_RENDER_SWR
 	xcb_disconnect(globox->x11_conn);
+#endif
 
 #ifdef GLOBOX_RENDER_OGL
 	XCloseDisplay(globox->xlib_display);
