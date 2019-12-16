@@ -55,9 +55,9 @@ inline bool globox_open(
 #endif
 
 #ifdef GLOBOX_RENDER_OGL
-	globox->xlib_display = XOpenDisplay(0);
+	globox->xlib_display = XOpenDisplay(NULL);
 
-	if (!globox->xlib_display)
+	if (globox->xlib_display == NULL)
 	{
 		return false;
 	}
@@ -65,7 +65,7 @@ inline bool globox_open(
 	globox->x11_screen = DefaultScreen(globox->xlib_display);
 	globox->x11_conn = XGetXCBConnection(globox->xlib_display);
 
-	if (!globox->x11_conn)
+	if (globox->x11_conn == NULL)
 	{
 		XCloseDisplay(globox->xlib_display);
 		return false;

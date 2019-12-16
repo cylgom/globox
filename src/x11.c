@@ -264,11 +264,11 @@ inline void create_glx(struct globox* globox)
 		return;
 	}
 
-	if (!glXMakeContextCurrent(
+	if (glXMakeContextCurrent(
 		globox->xlib_display,
 		globox->xlib_glx,
 		globox->xlib_glx,
-		globox->xlib_context))
+		globox->xlib_context) == False)
 	{
 		xcb_destroy_window(globox->x11_conn, globox->x11_win);
 		glXDestroyContext(globox->xlib_display, globox->xlib_context);
