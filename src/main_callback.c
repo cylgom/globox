@@ -8,6 +8,10 @@
 #include <stdio.h>
 #include <sys/epoll.h>
 
+#ifdef GLOBOX_RENDER_OGL
+#include <GL/gl.h>
+#endif
+
 #define MAX_EVENTS 1000
 
 extern unsigned char iconpix_beg;
@@ -24,6 +28,7 @@ static inline void handler(int sig)
 
 	if (ctx.redraw)
 	{
+#ifdef GLOBOX_RENDER_SWR
 		// background
 		for (uint32_t i = 0; i < ctx.height * ctx.width; ++i)
 		{
@@ -40,6 +45,12 @@ static inline void handler(int sig)
 
 			ctx.argb[pos] = 0x00FFFFFF;
 		}
+#endif
+
+#ifdef GLOBOX_RENDER_OGL
+		glClearColor(0.2, 0.4, 0.9, 1.0);
+		glClear(GL_COLOR_BUFFER_BIT);
+#endif
 
 		globox_copy(&ctx, 0, 0, ctx.width, ctx.height);
 	}

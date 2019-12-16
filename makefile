@@ -14,7 +14,7 @@ RESD = res
 
 INCL = -I$(SRCD)
 INCL+= -I$(INCD)
-SRCS =
+SRCS = $(SRCD)/main_callback.c
 SRCS_OBJS = $(OBJD)/$(RESD)/iconpix.o
 LINK =
 
@@ -24,13 +24,11 @@ BACKEND ?= x11
 # software
 ifeq ($(RENDER), swr)
 FLAGS+= -DGLOBOX_RENDER_SWR
-SRCS+= $(SRCD)/main_callback.c
 endif
 
 # opengl
 ifeq ($(RENDER), ogl)
 FLAGS+= -DGLOBOX_RENDER_OGL
-SRCS+= $(SRCD)/main_ogl.c
 LINK+= -lX11 -lX11-xcb -lGL
 endif
 
