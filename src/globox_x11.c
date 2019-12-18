@@ -21,6 +21,12 @@
 #include <GL/glx.h>
 #endif
 
+#ifdef GLOBOX_RENDER_VLK
+#define VK_USE_PLATFORM_XCB_KHR 1
+#define PLATFORM_DEPENDENT_EXTENSION_NAME VK_KHR_XCB_SURFACE_EXTENSION_NAME
+#include <vulkan/vulkan.h>
+#endif
+
 #define EXPOSE_QUEUE_LEN 10
 
 inline bool globox_open(
@@ -74,6 +80,40 @@ inline bool globox_open(
 	XSetEventQueueOwner(globox->xlib_display, XCBOwnsEventQueue);
 #endif
 
+#ifdef GLOBOX_RENDER_VLK
+	globox->x11_conn = xcb_connect(NULL, &(globox->x11_screen));
+
+	globox->vlk_allocator = NULL;
+	globox->vlk_chain = NULL;
+	globox->vlk_app_info = NULL;
+	globox->vlk_layers_count = 0;
+	globox->vlk_layers_names = NULL;
+	globox->vlk_ext_count = 0;
+	globox->vlk_ext_names = NULL;
+
+	VkInstanceCreateInfo instance_info =
+	{
+		.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+		.pNext = globox->vlk_chain,
+		.flags = 0,
+		.pApplicationInfo = globox->vlk_app_info,
+		.enabledLayerCount = globox->vlk_layers_count,
+		.ppEnabledLayerNames = globox->vlk_layers_names,
+		.enabledExtensionCount = globox->vlk_ext_count,
+		.ppEnabledExtensionNames = globox->vlk_ext_names,
+	};
+
+	VkResult ok = vkCreateInstance(
+		&instance_info,
+		globox->vlk_allocator,
+		&(globox->vlk_instance));
+
+	if (ok != VK_SUCCESS)
+	{
+		return false;
+	}
+#endif
+
 	globox->fd = xcb_get_file_descriptor(globox->x11_conn);
 	xcb_screen_t* screen = get_screen(globox);
 
@@ -89,6 +129,10 @@ inline bool globox_open(
 
 #ifdef GLOBOX_RENDER_OGL
 	create_glx(globox);
+#endif
+
+#ifdef GLOBOX_RENDER_VLK
+	create_vlk(globox);
 #endif
 
 	// operations have no effect when the context is in failure state
@@ -174,6 +218,7 @@ inline void globox_close(struct globox* globox)
 	{
 		free(globox->argb);
 		xcb_free_pixmap(globox->x11_conn, globox->x11_pix);
+		xcb_destroy_window(globox->x11_conn, globox->x11_win);
 	}
 	else
 	{
@@ -190,6 +235,12 @@ inline void globox_close(struct globox* globox)
 	glXDestroyContext(globox->xlib_display, globox->xlib_context);
 #endif
 
+#ifdef GLOBOX_RENDER_VLK
+	xcb_destroy_window(globox->x11_conn, globox->x11_win);
+	vkDestroySurfaceKHR(globox->vlk_instance, globox->vlk_surface, NULL);
+	vkDestroyInstance(globox->vlk_instance, NULL);
+#endif
+
 	free(globox->title);
 
 #ifdef GLOBOX_RENDER_SWR
@@ -198,6 +249,10 @@ inline void globox_close(struct globox* globox)
 
 #ifdef GLOBOX_RENDER_OGL
 	XCloseDisplay(globox->xlib_display);
+#endif
+
+#ifdef GLOBOX_RENDER_VLK
+	xcb_disconnect(globox->x11_conn);
 #endif
 }
 
@@ -365,9 +420,7 @@ inline bool globox_shrink(struct globox* globox)
 	}
 
 	return (globox->argb != NULL);
-#endif
-
-#ifdef GLOBOX_RENDER_OGL
+#else
 	return true;
 #endif
 }

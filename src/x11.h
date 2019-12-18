@@ -10,6 +10,7 @@ xcb_screen_t* get_screen(struct globox* globox);
 void create_window(struct globox* globox, xcb_screen_t* screen);
 void create_gfx(struct globox* globox, xcb_screen_t* screen);
 void create_glx(struct globox* globox);
+void create_vlk(struct globox* globox);
 bool visual_compatible(struct globox* globox, xcb_screen_t* screen);
 bool buffer_socket(struct globox* globox);
 void buffer_shm(struct globox* globox);

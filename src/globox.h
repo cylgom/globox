@@ -14,6 +14,12 @@
 #include <GL/glx.h>
 	#endif
 
+	#ifdef GLOBOX_RENDER_VLK
+#define VK_USE_PLATFORM_XCB_KHR 1
+#define PLATFORM_DEPENDENT_EXTENSION_NAME VK_KHR_XCB_SURFACE_EXTENSION_NAME
+#include <vulkan/vulkan.h>
+	#endif
+
 #include <xcb/xcb.h>
 #include "x11_helpers.h"
 #endif
@@ -61,6 +67,14 @@ struct globox
 	xcb_window_t x11_win;
 	int x11_screen;
 
+	#ifdef GLOBOX_RENDER_SWR
+	xcb_shm_segment_info_t x11_shm;
+	xcb_gcontext_t x11_gfx;
+	xcb_pixmap_t x11_pix;
+	bool x11_socket;
+	bool x11_pixmap_update;
+	#endif
+
 	#ifdef GLOBOX_RENDER_OGL
 	Display *xlib_display;
 	int xlib_screen;
@@ -69,12 +83,18 @@ struct globox
 	GLXWindow xlib_glx;
 	#endif
 
-	#ifdef GLOBOX_RENDER_SWR
-	xcb_shm_segment_info_t x11_shm;
-	xcb_gcontext_t x11_gfx;
-	xcb_pixmap_t x11_pix;
-	bool x11_socket;
-	bool x11_pixmap_update;
+	#ifdef GLOBOX_RENDER_VLK
+	VkInstance vlk_instance;
+	VkSurfaceKHR vlk_surface;
+
+	// for the user
+	const VkAllocationCallbacks* vlk_allocator;
+	const void* vlk_chain;
+	const VkApplicationInfo* vlk_app_info;
+	uint32_t vlk_layers_count;
+	const char* const* vlk_layers_names;
+	uint32_t vlk_ext_count;
+	const char* const* vlk_ext_names;
 	#endif
 #endif
 

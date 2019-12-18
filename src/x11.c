@@ -21,6 +21,12 @@
 #include <GL/glx.h>
 #endif
 
+#ifdef GLOBOX_RENDER_VLK
+#define VK_USE_PLATFORM_XCB_KHR 1
+#define PLATFORM_DEPENDENT_EXTENSION_NAME VK_KHR_XCB_SURFACE_EXTENSION_NAME
+#include <vulkan/vulkan.h>
+#endif
+
 #include "globox.h"
 
 // get access to _NET_WM atoms without using ewmh
@@ -130,7 +136,7 @@ static int visual_attribs[] =
 // it is probably better left as-is.
 inline void create_window(struct globox* globox, xcb_screen_t* screen)
 {
-#ifdef GLOBOX_RENDER_SWR
+#if defined(GLOBOX_RENDER_SWR) || defined(GLOBOX_RENDER_VLK)
 	xcb_visualid_t visual_id = screen->root_visual;
 
 	uint32_t value_list[2] =
@@ -274,6 +280,33 @@ inline void create_glx(struct globox* globox)
 		glXDestroyContext(globox->xlib_display, globox->xlib_context);
 
 		// TODO:error
+		return;
+	}
+#endif
+}
+
+inline void create_vlk(struct globox* globox)
+{
+#ifdef GLOBOX_RENDER_VLK
+	// link to the XCB window
+	VkXcbSurfaceCreateInfoKHR surface_info =
+	{
+		.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,
+		.pNext = NULL,
+		.flags = 0,
+		.connection = globox->x11_conn,
+		.window = globox->x11_win,
+	};
+
+	VkResult ok = vkCreateXcbSurfaceKHR(
+		globox->vlk_instance,
+		&surface_info,
+		globox->vlk_allocator,
+		&(globox->vlk_surface));
+
+	if (ok != VK_SUCCESS)
+	{
+		// TODO: error
 		return;
 	}
 #endif
@@ -462,9 +495,7 @@ inline bool globox_reserve(
 	globox->x11_pixmap_update = true;
 
 	return (globox->argb != NULL);
-#endif
-
-#ifdef GLOBOX_RENDER_OGL
+#else
 	return true;
 #endif
 }

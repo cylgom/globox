@@ -18,12 +18,18 @@ SRCS = $(SRCD)/main_callback.c
 SRCS_OBJS = $(OBJD)/$(RESD)/iconpix.o
 LINK =
 
-RENDER ?= ogl
+RENDER ?= vlk
 BACKEND ?= x11
 
 # software
 ifeq ($(RENDER), swr)
 FLAGS+= -DGLOBOX_RENDER_SWR
+endif
+
+# vulkan
+ifeq ($(RENDER), vlk)
+FLAGS+= -DGLOBOX_RENDER_VLK
+LINK+= -lvulkan
 endif
 
 # opengl
