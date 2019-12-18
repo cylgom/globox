@@ -92,7 +92,7 @@ int main()
 		epoll_ctl(
 			fd,
 			EPOLL_CTL_ADD,
-			ctx.fd,
+			ctx.fd.descriptor,
 			&ev);
 
 		// frame callback timer event

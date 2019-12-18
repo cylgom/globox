@@ -38,6 +38,12 @@ enum globox_state
 	GLOBOX_STATE_FULLSCREEN,
 };
 
+union globox_event
+{
+	int descriptor;
+	void* handle;
+};
+
 struct globox
 {
 	// these only represent the initial window position
@@ -55,7 +61,7 @@ struct globox
 	enum globox_state state;
 
 	bool redraw;
-	int fd;
+	union globox_event fd;
 
 	bool frame_event;
 	bool closed;

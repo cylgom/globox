@@ -62,7 +62,7 @@ inline bool globox_open(
 		return false;
 	}
 
-	globox->fd = wl_display_get_fd(globox->wl_display);
+	globox->fd.descriptor = wl_display_get_fd(globox->wl_display);
 	globox->wl_registry = wl_display_get_registry(globox->wl_display);
 	wl_registry_add_listener(
 		globox->wl_registry,
