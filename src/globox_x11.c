@@ -56,7 +56,7 @@ inline bool globox_open(
 	}
 
 	// connect to server
-#ifdef GLOBOX_RENDER_SWR
+#if defined(GLOBOX_RENDER_SWR) || defined(GLOBOX_RENDER_VLK)
 	globox->x11_conn = xcb_connect(NULL, &(globox->x11_screen));
 #endif
 
@@ -78,40 +78,6 @@ inline bool globox_open(
 	}
 
 	XSetEventQueueOwner(globox->xlib_display, XCBOwnsEventQueue);
-#endif
-
-#ifdef GLOBOX_RENDER_VLK
-	globox->x11_conn = xcb_connect(NULL, &(globox->x11_screen));
-
-	globox->vlk_allocator = NULL;
-	globox->vlk_chain = NULL;
-	globox->vlk_app_info = NULL;
-	globox->vlk_layers_count = 0;
-	globox->vlk_layers_names = NULL;
-	globox->vlk_ext_count = 0;
-	globox->vlk_ext_names = NULL;
-
-	VkInstanceCreateInfo instance_info =
-	{
-		.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-		.pNext = globox->vlk_chain,
-		.flags = 0,
-		.pApplicationInfo = globox->vlk_app_info,
-		.enabledLayerCount = globox->vlk_layers_count,
-		.ppEnabledLayerNames = globox->vlk_layers_names,
-		.enabledExtensionCount = globox->vlk_ext_count,
-		.ppEnabledExtensionNames = globox->vlk_ext_names,
-	};
-
-	VkResult ok = vkCreateInstance(
-		&instance_info,
-		globox->vlk_allocator,
-		&(globox->vlk_instance));
-
-	if (ok != VK_SUCCESS)
-	{
-		return false;
-	}
 #endif
 
 	globox->fd.descriptor = xcb_get_file_descriptor(globox->x11_conn);

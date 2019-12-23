@@ -14,57 +14,62 @@ RESD = res
 
 INCL = -I$(SRCD)
 INCL+= -I$(INCD)
-SRCS = $(SRCD)/main_callback.c
+SRCS =
 SRCS_OBJS = $(OBJD)/$(RESD)/iconpix.o
 LINK =
 
 RENDER ?= vlk
 BACKEND ?= x11
 
-# software
+# rendering backends
+## software
 ifeq ($(RENDER), swr)
 FLAGS+= -DGLOBOX_RENDER_SWR
+SRCS = $(SRCD)/main_epoll.c
 endif
 
-# vulkan
+## vulkan
 ifeq ($(RENDER), vlk)
 FLAGS+= -DGLOBOX_RENDER_VLK
 LINK+= -lvulkan
+LINK+= -lVkLayer_khronos_validation
+SRCS = $(SRCD)/main_vulkan.c
 endif
 
-# opengl
+## opengl
 ifeq ($(RENDER), ogl)
 FLAGS+= -DGLOBOX_RENDER_OGL
 LINK+= -lX11 -lX11-xcb -lGL
+SRCS = $(SRCD)/main_callback.c
 endif
 
-# x11
+# windowing backends
+## x11
 ifeq ($(BACKEND), x11)
 FLAGS+= -DGLOBOX_X11
 SRCS+= $(SRCD)/x11.c
 SRCS+= $(SRCD)/globox_x11.c
 LINK+= -lxcb -lxcb-shm -lxcb-randr -lrt
-
 .PHONY: final
 final: $(BIND)/$(NAME)
 endif
 
-# wayland
+## wayland
 ifeq ($(BACKEND), wayland)
 FLAGS+= -DGLOBOX_WAYLAND
 SRCS+= $(SRCD)/wayland.c
 SRCS+= $(SRCD)/globox_wayland.c
 SRCS+= $(INCD)/xdg-shell-protocol.c
 LINK = -lwayland-client -lrt
-
 .PHONY: final
 final: | $(INCD) $(BIND)/$(NAME)
 endif
 
-# objects listing
+# rest of the makefile
+## objects listing
 SRCS_OBJS+= $(patsubst %.c,$(OBJD)/%.o,$(SRCS))
 
-# wayland
+## wayland
 $(INCD):
 	@echo "generating wayland protocol extensions source files"
 	@mkdir $@
@@ -75,7 +80,7 @@ $(INCD):
 	< /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml \
 	> $@/xdg-shell-client-protocol.h
 
-# x11
+## x11
 $(RESD)/iconpix.bin:
 	@echo "generating icons pixmap"
 	@cd $(RESD) && ./makepix.sh
@@ -88,13 +93,13 @@ $(OBJD)/$(RESD)/iconpix.o: $(RESD)/iconpix.bin
 	--rename-section .data=.iconpix \
 	$< $@
 
-# generic compiling command
+## generic compiling command
 $(OBJD)/%.o: %.c
 	@echo "building object $@"
 	@mkdir -p $(@D)
 	@$(CC) $(INCL) $(FLAGS) -c -o $@ $<
 
-# final executable
+## final executable
 $(BIND)/$(NAME): $(SRCS_OBJS)
 	@echo "compiling executable $@"
 	@mkdir -p $(@D)
@@ -103,7 +108,7 @@ $(BIND)/$(NAME): $(SRCS_OBJS)
 run:
 	@cd $(BIND) && $(CMD)
 
-# tools
+## tools
 leak: leakgrind
 leakgrind: $(BIND)/$(NAME)
 	@rm -f valgrind.log
