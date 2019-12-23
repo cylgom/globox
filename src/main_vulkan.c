@@ -37,6 +37,16 @@ struct vlk_dev_info_list
 };
 
 VkDevice vlk_dev_logical;
+VkQueue vlk_queue;
+
+VkSwapchainKHR vlk_chain;
+VkCommandPool vlk_cmd_pool;
+VkImage* vlk_image_list;
+VkCommandBuffer* vlk_cmd_list;
+
+VkSemaphore vlk_present_semaphore;
+VkSemaphore vlk_render_semaphore;
+
 VkPhysicalDevice* vlk_dev_list;
 VkPhysicalDeviceProperties* vlk_dev_props_list;
 VkSurfaceCapabilitiesKHR* vlk_surf_caps_list;
@@ -45,6 +55,7 @@ struct vlk_dev_info_list* vlk_dev_info_list;
 uint32_t count_dev;
 uint32_t count_queue;
 uint32_t count_format;
+uint32_t count_chain;
 struct vlk_dev* vlk_dev;
 
 uint32_t vlk_selected_dev;
@@ -487,8 +498,240 @@ static inline void handler(int sig)
 
 	if (ctx.redraw)
 	{
+		uint32_t index = 0;
+
+		VkResult ok = vkAcquireNextImageKHR(
+			vlk_dev_logical,
+			vlk_chain,
+			0xFFFFFFFFFFFFFFFF,
+			vlk_present_semaphore,
+			NULL,
+			&index);
+
+		if (ok != VK_SUCCESS)
+		{
+			printf("SHEEEIIIT %d\n", ok);
+			return;
+		}
+
+		VkPipelineStageFlags flags = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+		VkSubmitInfo submit =
+		{
+			.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+			.commandBufferCount = 1,
+			.pCommandBuffers = &(vlk_cmd_list[index]),
+			.pWaitSemaphores = &vlk_present_semaphore,
+			.waitSemaphoreCount = 1,
+			.pWaitDstStageMask = &flags,
+			.pSignalSemaphores = &vlk_render_semaphore,
+			.signalSemaphoreCount = 1,
+		};
+
+		printf("1\n");
+		ok = vkQueueSubmit(vlk_queue, 1, &submit, NULL);
+		printf("2\n");
+
+		if (ok != VK_SUCCESS)
+		{
+			printf("2 SHEEEIIIT\n");
+			return;
+		}
+
+		VkPresentInfoKHR present =
+		{
+			.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+			.swapchainCount = 1,
+			.pSwapchains = &vlk_chain,
+			.pImageIndices = &index,
+			.pWaitSemaphores = &vlk_render_semaphore,
+			.waitSemaphoreCount = 1,
+		};
+
+		ok = vkQueuePresentKHR(vlk_queue, &present);
+
+		if (ok != VK_SUCCESS)
+		{
+			printf("3 SHEEEIIIT\n");
+			return;
+		}
+
 		globox_copy(&ctx, 0, 0, ctx.width, ctx.height);
 	}
+}
+
+static inline uint8_t vlk_swapchain(struct globox* globox)
+{
+	uint32_t count_image = 2;
+	VkSurfaceCapabilitiesKHR surf_caps = vlk_surf_caps_list[vlk_selected_dev];
+
+	if ((surf_caps.currentExtent.width == ((uint32_t) -1))
+	|| (count_image < surf_caps.minImageCount)
+	|| (count_image > surf_caps.maxImageCount))
+	{
+		return 1;
+	}
+
+	// TODO: check surface format list
+	VkSwapchainCreateInfoKHR info =
+	{
+		.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+		.surface = globox->vlk_surface,
+		.minImageCount = count_image,
+		.imageFormat = vlk_dev_info_list[vlk_selected_dev].surf_format_list[0].format,
+		.imageColorSpace = vlk_dev_info_list[vlk_selected_dev].surf_format_list[0].colorSpace,
+		.imageExtent = vlk_surf_caps_list[vlk_selected_dev].currentExtent,
+		.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+		.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
+		.imageArrayLayers = 1,
+		.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
+		.presentMode = VK_PRESENT_MODE_FIFO_KHR,
+		.clipped = true,
+		.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+	};
+
+	VkResult ok = vkCreateSwapchainKHR(
+		vlk_dev_logical,
+		&info,
+		NULL,
+		&vlk_chain);
+
+	if (ok != VK_SUCCESS)
+	{
+		return 2;
+	}
+
+	count_chain = 0;
+
+	ok = vkGetSwapchainImagesKHR(vlk_dev_logical, vlk_chain, &count_chain, NULL);
+
+	if (ok != VK_SUCCESS)
+	{
+		return 3;
+	}
+
+	vlk_image_list = malloc(count_chain * (sizeof (VkImage)));
+	vlk_cmd_list = malloc(count_chain * (sizeof (VkCommandBuffer)));
+
+	ok = vkGetSwapchainImagesKHR(vlk_dev_logical, vlk_chain, &count_chain, vlk_image_list);
+
+	if (ok != VK_SUCCESS)
+	{
+		return 4;
+	}
+
+	return 0;
+}
+
+static inline uint8_t vlk_cmd_get()
+{
+	VkCommandPoolCreateInfo cmd =
+	{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+		.queueFamilyIndex = vlk_selected_family,
+	};
+
+	VkResult ok = vkCreateCommandPool(vlk_dev_logical, &cmd, NULL, &vlk_cmd_pool);
+
+	if (ok != VK_SUCCESS)
+	{
+		return 1;
+	}
+
+	VkCommandBufferAllocateInfo info =
+	{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+		.commandPool = vlk_cmd_pool,
+		.commandBufferCount = count_chain,
+		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+	};
+
+	ok = vkAllocateCommandBuffers(
+		vlk_dev_logical,
+		&info,
+		vlk_cmd_list);
+
+	if (ok != VK_SUCCESS)
+	{
+		return 2;
+	}
+
+	return 0;
+}
+
+static inline uint8_t vlk_cmd_rec()
+{
+	VkCommandBufferBeginInfo info =
+	{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
+	};
+
+	VkClearColorValue color;
+	color.float32[0] = 164.0f / 256.0f;
+	color.float32[1] = 30.0f / 256.0f;
+	color.float32[2] = 34.0f / 256.0f;
+	color.float32[3] = 0.0f;
+
+	VkImageSubresourceRange range =
+	{
+		.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+		.levelCount = 1,
+		.layerCount = 1,
+	};
+
+	for (uint32_t i = 0; i < count_chain; ++i)
+	{
+		VkResult ok = vkBeginCommandBuffer(vlk_cmd_list[i], &info);
+
+		if (ok != VK_SUCCESS)
+		{
+			return 1;
+		}
+
+		vkCmdClearColorImage(
+			vlk_cmd_list[i],
+			vlk_image_list[i],
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			&color,
+			1,
+			&range);
+
+		ok = vkEndCommandBuffer(vlk_cmd_list[i]);
+
+		if (ok != VK_SUCCESS)
+		{
+			return 2;
+		}
+	}
+
+	return 0;
+}
+
+static inline uint32_t vlk_semaphores()
+{
+	VkResult ok;
+
+	VkSemaphoreCreateInfo info =
+	{
+		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+	};
+
+	ok = vkCreateSemaphore(vlk_dev_logical , &info, NULL, &vlk_present_semaphore);
+
+	if (ok != VK_SUCCESS)
+	{
+		return 1;
+	}
+
+	ok = vkCreateSemaphore(vlk_dev_logical , &info, NULL, &vlk_render_semaphore);
+
+	if (ok != VK_SUCCESS)
+	{
+		return 2;
+	}
+
+	return 0;
 }
 
 int main()
@@ -539,6 +782,35 @@ int main()
 	vlk_list_physical(&ctx);
 	vlk_select_physical(&ctx);
 	vlk_create_logical(&ctx);
+
+	vkGetDeviceQueue(vlk_dev_logical, vlk_selected_family, 0, &vlk_queue);
+
+	uint8_t globox_ok = vlk_swapchain(&ctx);
+
+	if (globox_ok != 0)
+	{
+		printf("shit1 %d\n", globox_ok);
+		return 1;
+	}
+
+	globox_ok = vlk_cmd_get();
+
+	if (globox_ok != 0)
+	{
+		printf("shit2\n");
+		return 1;
+	}
+
+	globox_ok = vlk_cmd_rec();
+
+	if (globox_ok != 0)
+	{
+		printf("shit3\n");
+		return 1;
+	}
+
+	vlk_semaphores();
+
 #if 0
 	globox_vlk(&ctx);
 #endif
@@ -589,6 +861,12 @@ int main()
 		}
 	}
 
+	free(vlk_image_list);
+	free(vlk_cmd_list);
+	vkDestroySemaphore(vlk_dev_logical, vlk_present_semaphore, NULL);
+	vkDestroySemaphore(vlk_dev_logical, vlk_render_semaphore, NULL);
+	vkDestroySwapchainKHR(vlk_dev_logical, vlk_chain, NULL);
+	vkDestroyCommandPool(vlk_dev_logical, vlk_cmd_pool, NULL);
 	vkDestroyDevice(vlk_dev_logical, NULL);
 
 	PFN_vkDestroyDebugReportCallbackEXT destroy =
