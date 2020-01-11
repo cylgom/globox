@@ -29,6 +29,10 @@
 #include "xdg-shell-client-protocol.h"
 #endif
 
+#ifdef GLOBOX_WIN
+#include <windows.h>
+#endif
+
 // structures
 enum globox_state
 {
@@ -134,6 +138,13 @@ struct globox
 
 	uint32_t* wl_icon;
 	uint32_t wl_icon_len;
+#endif
+
+#ifdef GLOBOX_WIN
+	LPWSTR win_classname;
+	WNDCLASSEX win_class;
+	HWND win_handle;
+	MSG win_msg;
 #endif
 };
 

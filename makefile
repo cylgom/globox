@@ -1,5 +1,6 @@
 NAME = globox
-CC = gcc
+#CC = gcc
+CC = x86_64-w64-mingw32-gcc
 FLAGS = -std=c99 -pedantic -g
 FLAGS+= -Wall -Wno-unused-parameter -Wextra -Werror=vla -Werror
 VALGRIND = --show-leak-kinds=all --track-origins=yes --leak-check=full --suppressions=../res/valgrind.supp
@@ -15,11 +16,11 @@ RESD = res
 INCL = -I$(SRCD)
 INCL+= -I$(INCD)
 SRCS =
-SRCS_OBJS = $(OBJD)/$(RESD)/iconpix.o
+SRCS_OBJS = $(OBJD)/$(RESD)/icon/iconpix.o
 LINK =
 
-RENDER ?= vlk
-BACKEND ?= x11
+RENDER ?= swr
+BACKEND ?= win
 
 # rendering backends
 ## software
@@ -65,6 +66,17 @@ LINK = -lwayland-client -lrt
 final: | $(INCD) $(BIND)/$(NAME)
 endif
 
+## win
+ifeq ($(BACKEND), win)
+FLAGS+= -DGLOBOX_WIN -DUNICODE -D_UNICODE
+SRCS = $(SRCD)/main_win_getmessage.c
+SRCS+= $(SRCD)/win.c
+SRCS+= $(SRCD)/globox_win.c
+LINK+= -lgdi32 -mwindows -s
+.PHONY: final
+final: $(BIND)/$(NAME)
+endif
+
 # rest of the makefile
 ## objects listing
 SRCS_OBJS+= $(patsubst %.c,$(OBJD)/%.o,$(SRCS))
@@ -80,16 +92,16 @@ $(INCD):
 	< /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml \
 	> $@/xdg-shell-client-protocol.h
 
-## x11
-$(RESD)/iconpix.bin:
+## icon binary
+$(RESD)/icon/iconpix.bin:
 	@echo "generating icons pixmap"
-	@cd $(RESD) && ./makepix.sh
+	@cd $(RESD)/icon && ./makepix.sh
 
-$(OBJD)/$(RESD)/iconpix.o: $(RESD)/iconpix.bin
+$(OBJD)/$(RESD)/icon/iconpix.o: $(RESD)/icon/iconpix.bin
 	@echo "building icon object"
 	@mkdir -p $(@D)
 	@objcopy -I binary -O elf64-x86-64 -B i386:x86-64 \
-	--redefine-syms=$(RESD)/syms.map \
+	--redefine-syms=$(RESD)/icon/syms.map \
 	--rename-section .data=.iconpix \
 	$< $@
 
