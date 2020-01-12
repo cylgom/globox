@@ -72,7 +72,8 @@ FLAGS+= -DGLOBOX_WIN -DUNICODE -D_UNICODE
 SRCS = $(SRCD)/main_win_getmessage.c
 SRCS+= $(SRCD)/win.c
 SRCS+= $(SRCD)/globox_win.c
-LINK+= -lgdi32 -mwindows -s
+LINK+= -lgdi32 -mwindows
+CMD = wine ./$(NAME)
 .PHONY: final
 final: $(BIND)/$(NAME)
 endif
