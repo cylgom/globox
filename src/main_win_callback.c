@@ -16,6 +16,7 @@ static inline void handler(int sig)
 {
 	globox_handle_events(&ctx);
 
+#if 0
 	if (ctx.redraw)
 	{
 		// background
@@ -37,6 +38,7 @@ static inline void handler(int sig)
 
 		globox_copy(&ctx, 0, 0, ctx.width, ctx.height);
 	}
+#endif
 }
 
 int main()
