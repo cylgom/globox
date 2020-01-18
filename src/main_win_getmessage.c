@@ -16,7 +16,6 @@ static inline void handler(int sig)
 {
 	globox_handle_events(&ctx);
 
-#if 0
 	if (ctx.redraw)
 	{
 		// background
@@ -38,7 +37,6 @@ static inline void handler(int sig)
 
 		globox_copy(&ctx, 0, 0, ctx.width, ctx.height);
 	}
-#endif
 }
 
 int main()
@@ -50,8 +48,8 @@ int main()
 		"test",
 		0,
 		0,
-		100,
-		100,
+		200,
+		200,
 		false);
 
 	if (ok)
@@ -64,16 +62,13 @@ int main()
 			2 + (16 * 16) + 2 + (32 * 32) + 2 + (64 * 64));
 		globox_commit(&ctx);
 
-		while (1)
+		BOOL win_ok = 1;
+
+		while (win_ok > 0)
 		{
 			globox_prepoll(&ctx);
-			GetMessage(&ctx.win_msg, ctx.fd.handle, 0, 0);
+			win_ok = GetMessage(&ctx.win_msg, ctx.fd.handle, 0, 0);
 			handler(0);
-
-			if (ctx.closed)
-			{
-				break;
-			}
 		}
 
 		globox_close(&ctx);

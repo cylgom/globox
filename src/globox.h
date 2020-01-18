@@ -145,6 +145,8 @@ struct globox
 	WNDCLASSEX win_class;
 	HWND win_handle;
 	MSG win_msg;
+	HDC hdc_compatible;
+	HBITMAP hbm;
 #endif
 };
 

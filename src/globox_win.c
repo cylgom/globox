@@ -6,30 +6,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <windows.h>
+#include <stdio.h>
 #include "win.h"
 
-// we (exceptionally) put the event callback here to avoid pointless complexity
+// dummy event callback we exceptionally put here to avoid pointless complexity
 LRESULT CALLBACK win_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	switch(msg)
-	{
-		case WM_CLOSE:
-		{
-			DestroyWindow(hwnd);
-			break;
-		}
-		case WM_DESTROY:
-		{
-			PostQuitMessage(0);
-			break;
-		}
-		default:
-		{
-			return DefWindowProc(hwnd, msg, wParam, lParam);
-		}
-	}
-
-	return 0;
+	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
 inline bool globox_open(
@@ -108,6 +91,37 @@ inline bool globox_open(
 		return false;
 	}
 
+	// allocate buffer
+	PAINTSTRUCT paint;
+	BITMAPINFO bmp_info;
+
+	bmp_info.bmiHeader.biSize = sizeof (BITMAPINFOHEADER);
+	bmp_info.bmiHeader.biWidth = globox->width;
+	bmp_info.bmiHeader.biHeight = globox->height;
+	bmp_info.bmiHeader.biPlanes = 1; // de-facto
+	bmp_info.bmiHeader.biBitCount = 32; // XRGB
+	bmp_info.bmiHeader.biCompression = BI_RGB; // raw unpaletted format
+	bmp_info.bmiHeader.biSizeImage = 0;
+	bmp_info.bmiHeader.biXPelsPerMeter = 0; // fucking DPI
+	bmp_info.bmiHeader.biYPelsPerMeter = 0; // fucking orientation-dependant DPI
+	bmp_info.bmiHeader.biClrUsed = 0; // maximum as defined by biCompression
+	bmp_info.bmiHeader.biClrImportant = 0; // all colors required
+	// bmp_info.bmiColors is NULL if biCompression is BI_RGB
+
+	HDC hdc_window = BeginPaint(globox->win_handle, &paint);
+	globox->hdc_compatible = CreateCompatibleDC(hdc_window);
+
+	globox->hbm = CreateDIBSection(
+		globox->hdc_compatible,
+		&bmp_info,
+		DIB_RGB_COLORS,
+		(void**) &(globox->argb),
+		NULL, // automatic memory allocation by uncle Windows
+		0); // buffer offset
+
+	EndPaint(globox->win_handle, &paint);
+
+	// finish window initialization
 	globox->fd.handle = globox->win_handle;
 	UpdateWindow(globox->win_handle);
 
@@ -132,6 +146,25 @@ inline bool globox_handle_events(struct globox* globox)
 	TranslateMessage(&(globox->win_msg));
 	DispatchMessage(&(globox->win_msg));
 
+	switch (globox->win_msg.message)
+	{
+		case WM_CLOSE:
+		{
+			DestroyWindow(globox->win_handle);
+			break;
+		}
+		case WM_DESTROY:
+		{
+			PostQuitMessage(0);
+			break;
+		}
+		case WM_PAINT:
+		{
+			globox->redraw = true;
+			break;
+		}
+	}
+
 	return true;
 }
 
@@ -149,6 +182,23 @@ inline void globox_copy(
 	uint32_t width,
 	uint32_t height)
 {
+	PAINTSTRUCT paint;
+
+	HDC hdc = BeginPaint(globox->win_handle, &paint);
+
+	BitBlt(
+		hdc,
+		x,
+		y,
+		width,
+		height,
+		globox->hdc_compatible,
+		0,
+		0,
+		SRCCOPY);
+
+	EndPaint(globox->win_handle, &paint);
+
 	globox->redraw = false;
 }
 
