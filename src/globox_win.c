@@ -91,8 +91,17 @@ inline bool globox_open(
 		return false;
 	}
 
+	// finish window initialization
+	globox->fd.handle = globox->win_handle;
+	UpdateWindow(globox->win_handle);
+
+	globox->title = NULL;
+	globox_set_title(globox, title);
+
+	globox_set_state(globox, state);
+	ShowWindow(globox->win_handle, SW_SHOWNORMAL); // TODO use state
+
 	// allocate buffer
-	PAINTSTRUCT paint;
 	BITMAPINFO bmp_info;
 
 	bmp_info.bmiHeader.biSize = sizeof (BITMAPINFOHEADER);
@@ -108,9 +117,7 @@ inline bool globox_open(
 	bmp_info.bmiHeader.biClrImportant = 0; // all colors required
 	// bmp_info.bmiColors is NULL if biCompression is BI_RGB
 
-	HDC hdc_window = BeginPaint(globox->win_handle, &paint);
-	globox->hdc_compatible = CreateCompatibleDC(hdc_window);
-
+	globox->hdc_compatible = CreateCompatibleDC(NULL);
 	globox->hbm = CreateDIBSection(
 		globox->hdc_compatible,
 		&bmp_info,
@@ -119,17 +126,7 @@ inline bool globox_open(
 		NULL, // automatic memory allocation by uncle Windows
 		0); // buffer offset
 
-	EndPaint(globox->win_handle, &paint);
-
-	// finish window initialization
-	globox->fd.handle = globox->win_handle;
-	UpdateWindow(globox->win_handle);
-
-	globox->title = NULL;
-	globox_set_title(globox, title);
-
-	globox_set_state(globox, state);
-	ShowWindow(globox->win_handle, SW_SHOWNORMAL); // TODO use state
+	SelectObject(globox->hdc_compatible, globox->hbm);
 
 	return true;
 }
@@ -184,17 +181,17 @@ inline void globox_copy(
 {
 	PAINTSTRUCT paint;
 
-	HDC hdc = BeginPaint(globox->win_handle, &paint);
+	HDC hdc_window = BeginPaint(globox->win_handle, &paint);
 
 	BitBlt(
-		hdc,
+		hdc_window,
 		x,
 		y,
 		width,
 		height,
 		globox->hdc_compatible,
-		0,
-		0,
+		x,
+		y,
 		SRCCOPY);
 
 	EndPaint(globox->win_handle, &paint);
