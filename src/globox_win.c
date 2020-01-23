@@ -137,7 +137,6 @@ inline void globox_close(struct globox* globox)
 	free(globox->title);
 }
 
-// event queue processor with smart skipping for resizing and moving operations
 inline bool globox_handle_events(struct globox* globox)
 {
 	TranslateMessage(&(globox->win_msg));
@@ -170,8 +169,6 @@ inline bool globox_shrink(struct globox* globox)
 	return true;
 }
 
-// draw a part of the buffer on the screen
-// re-allocate the pixmap here to avoid artifacts
 inline void globox_copy(
 	struct globox* globox,
 	int32_t x,
@@ -194,6 +191,9 @@ inline void globox_copy(
 		y,
 		SRCCOPY);
 
+	// flushing here seems to reduce refresh latency
+	GdiFlush();
+
 	EndPaint(globox->win_handle, &paint);
 
 	globox->redraw = false;
@@ -209,13 +209,11 @@ inline void globox_prepoll(struct globox* globox)
 	// not used ATM
 }
 
-// direct icon change
 inline void globox_set_icon(struct globox* globox, uint32_t* pixmap, uint32_t len)
 {
 
 }
 
-// direct title change
 inline void globox_set_title(struct globox* globox, const char* title)
 {
 	if (globox->title != NULL)
