@@ -12,7 +12,43 @@
 // dummy event callback we exceptionally put here to avoid pointless complexity
 LRESULT CALLBACK win_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	// we must post some messages manually for reasons
+	switch (msg)
+	{
+		case WM_SIZE:
+		{
+			PostMessage(hwnd, WM_SIZE, wParam, lParam);
+
+			break;
+		}
+	}
+
 	return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+void resize(struct globox* globox)
+{
+	// update bitmap info
+	globox->bmp_info.bmiHeader.biWidth = globox->width;
+	globox->bmp_info.bmiHeader.biHeight = globox->height;
+
+	if (globox->hbm != NULL)
+	{
+		DeleteObject(globox->hbm);
+	}
+
+	// re-create buffer
+	HDC hdc = GetDC(globox->win_handle);
+
+	globox->hbm = CreateDIBSection(
+		hdc,
+		&(globox->bmp_info),
+		DIB_RGB_COLORS,
+		(void**) &(globox->argb),
+		NULL, // automatic memory allocation by uncle Windows
+		0); // buffer offset
+
+	ReleaseDC(globox->win_handle, hdc);
 }
 
 inline bool globox_open(
@@ -101,32 +137,26 @@ inline bool globox_open(
 	globox_set_state(globox, state);
 	ShowWindow(globox->win_handle, SW_SHOWNORMAL); // TODO use state
 
+	// prepare bitmap info
+	// beware, some fields are not initialized here:
+	// globox->bmp_info.bmiHeader.biWidth is set to globox->width in resize()
+	// globox->bmp_info.bmiHeader.biHeight is set to globox->height in resize()
+	// globox->bmp_info.bmiColors is NULL if biCompression is BI_RGB
+	globox->bmp_info.bmiHeader.biSize = sizeof (BITMAPINFOHEADER);
+	globox->bmp_info.bmiHeader.biPlanes = 1; // de-facto
+	globox->bmp_info.bmiHeader.biBitCount = 32; // XRGB
+	globox->bmp_info.bmiHeader.biCompression = BI_RGB; // raw unpaletted format
+	globox->bmp_info.bmiHeader.biSizeImage = 0;
+	globox->bmp_info.bmiHeader.biXPelsPerMeter = 0; // fucking DPI
+	globox->bmp_info.bmiHeader.biYPelsPerMeter = 0; // fucking orientation-dependant DPI
+	globox->bmp_info.bmiHeader.biClrUsed = 0; // maximum as defined by biCompression
+	globox->bmp_info.bmiHeader.biClrImportant = 0; // all colors required
+
+	// set bitmap handle to NULL so it is not freed in resize()
+	globox->hbm = NULL;
+
 	// allocate buffer
-	BITMAPINFO bmp_info;
-
-	bmp_info.bmiHeader.biSize = sizeof (BITMAPINFOHEADER);
-	bmp_info.bmiHeader.biWidth = globox->width;
-	bmp_info.bmiHeader.biHeight = globox->height;
-	bmp_info.bmiHeader.biPlanes = 1; // de-facto
-	bmp_info.bmiHeader.biBitCount = 32; // XRGB
-	bmp_info.bmiHeader.biCompression = BI_RGB; // raw unpaletted format
-	bmp_info.bmiHeader.biSizeImage = 0;
-	bmp_info.bmiHeader.biXPelsPerMeter = 0; // fucking DPI
-	bmp_info.bmiHeader.biYPelsPerMeter = 0; // fucking orientation-dependant DPI
-	bmp_info.bmiHeader.biClrUsed = 0; // maximum as defined by biCompression
-	bmp_info.bmiHeader.biClrImportant = 0; // all colors required
-	// bmp_info.bmiColors is NULL if biCompression is BI_RGB
-
-	globox->hdc_compatible = CreateCompatibleDC(NULL);
-	globox->hbm = CreateDIBSection(
-		globox->hdc_compatible,
-		&bmp_info,
-		DIB_RGB_COLORS,
-		(void**) &(globox->argb),
-		NULL, // automatic memory allocation by uncle Windows
-		0); // buffer offset
-
-	SelectObject(globox->hdc_compatible, globox->hbm);
+	resize(globox);
 
 	return true;
 }
@@ -139,24 +169,42 @@ inline void globox_close(struct globox* globox)
 
 inline bool globox_handle_events(struct globox* globox)
 {
-	TranslateMessage(&(globox->win_msg));
-	DispatchMessage(&(globox->win_msg));
-
 	switch (globox->win_msg.message)
 	{
 		case WM_CLOSE:
 		{
 			DestroyWindow(globox->win_handle);
+
 			break;
 		}
 		case WM_DESTROY:
 		{
+			DeleteObject(globox->hbm);
 			PostQuitMessage(0);
+
 			break;
 		}
 		case WM_PAINT:
 		{
 			globox->redraw = true;
+
+			break;
+		}
+		case WM_SIZE:
+		{
+			globox->width = LOWORD(globox->win_msg.lParam);
+			globox->height = HIWORD(globox->win_msg.lParam);
+			globox->redraw = true;
+
+			resize(globox);
+
+			break;
+		}
+		default:
+		{
+			TranslateMessage(&(globox->win_msg));
+			DispatchMessage(&(globox->win_msg));
+
 			break;
 		}
 	}
@@ -176,9 +224,23 @@ inline void globox_copy(
 	uint32_t width,
 	uint32_t height)
 {
+	// damage region
+	RECT update =
+	{
+		.left = x,
+		.top = y,
+		.right = width,
+		.bottom = height,
+	};
+
+	InvalidateRect(globox->win_handle, &update, TRUE);
+
+	// paint
 	PAINTSTRUCT paint;
 
 	HDC hdc_window = BeginPaint(globox->win_handle, &paint);
+	HDC hdc_compatible = CreateCompatibleDC(hdc_window);
+	HBITMAP hbm_compatible_old = SelectObject(hdc_compatible, globox->hbm);
 
 	BitBlt(
 		hdc_window,
@@ -186,16 +248,16 @@ inline void globox_copy(
 		y,
 		width,
 		height,
-		globox->hdc_compatible,
+		hdc_compatible,
 		x,
 		y,
 		SRCCOPY);
 
-	// flushing here seems to reduce refresh latency
-	GdiFlush();
-
+	SelectObject(hdc_compatible, hbm_compatible_old);
+	DeleteDC(hdc_compatible);
 	EndPaint(globox->win_handle, &paint);
 
+	// done
 	globox->redraw = false;
 }
 

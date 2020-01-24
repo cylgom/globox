@@ -141,11 +141,12 @@ struct globox
 #endif
 
 #ifdef GLOBOX_WIN
-	LPWSTR win_classname;
 	WNDCLASSEX win_class;
-	HWND win_handle;
+	LPWSTR win_classname;
 	MSG win_msg;
-	HDC hdc_compatible;
+
+	HWND win_handle;
+	BITMAPINFO bmp_info;
 	HBITMAP hbm;
 #endif
 };
