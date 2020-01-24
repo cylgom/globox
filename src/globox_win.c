@@ -51,6 +51,28 @@ void resize(struct globox* globox)
 	ReleaseDC(globox->win_handle, hdc);
 }
 
+HICON bitmap_to_icon(struct globox* globox, BITMAP* bmp)
+{
+	HDC hdc = GetDC(globox->win_handle);
+
+	HBITMAP mask = CreateCompatibleBitmap(hdc, bmp->bmWidth, bmp->bmHeight);
+	HBITMAP hbm = CreateBitmapIndirect(bmp);
+
+	ICONINFO info =
+	{
+		.fIcon = TRUE,
+		.hbmColor = hbm,
+		.hbmMask = mask,
+	};
+
+	HICON icon = CreateIconIndirect(&info);
+
+	DeleteObject(mask);
+	ReleaseDC(globox->win_handle, hdc);
+
+	return icon;
+}
+
 inline bool globox_open(
 	struct globox* globox,
 	enum globox_state state,
@@ -263,7 +285,7 @@ inline void globox_copy(
 
 inline void globox_commit(struct globox* globox)
 {
-
+	GdiFlush();
 }
 
 inline void globox_prepoll(struct globox* globox)
@@ -271,9 +293,46 @@ inline void globox_prepoll(struct globox* globox)
 	// not used ATM
 }
 
+// automagically converts X11 pixmaps to Windows icons :)
 inline void globox_set_icon(struct globox* globox, uint32_t* pixmap, uint32_t len)
 {
+	// smol
+	BITMAP pixmap_32 =
+	{
+		.bmType = 0,
+		.bmWidth = 32,
+		.bmHeight = 32,
+		.bmWidthBytes = 32 * 4,
+		.bmPlanes = 1,
+		.bmBitsPixel = 32,
+		.bmBits = pixmap + 4 + 16*16,
+	};
 
+	HICON icon_32 = bitmap_to_icon(globox, &pixmap_32);
+
+	if (icon_32)
+	{
+		SendMessage(globox->win_handle, WM_SETICON, ICON_SMALL, (LPARAM) icon_32);
+	}
+
+	// thicc boi
+	BITMAP pixmap_64 =
+	{
+		.bmType = 0,
+		.bmWidth = 64,
+		.bmHeight = 64,
+		.bmWidthBytes = 64 * 4,
+		.bmPlanes = 1,
+		.bmBitsPixel = 32,
+		.bmBits = pixmap + 6 + 16*16 + 32*32,
+	};
+
+	HICON icon_64 = bitmap_to_icon(globox, &pixmap_64);
+
+	if (icon_64)
+	{
+		SendMessage(globox->win_handle, WM_SETICON, ICON_BIG, (LPARAM) icon_64);
+	}
 }
 
 inline void globox_set_title(struct globox* globox, const char* title)
