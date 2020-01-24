@@ -16,8 +16,9 @@ LRESULT CALLBACK win_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	switch (msg)
 	{
 		case WM_SIZE:
+		case WM_SYSCOMMAND:
 		{
-			PostMessage(hwnd, WM_SIZE, wParam, lParam);
+			PostMessage(hwnd, msg, wParam, lParam);
 
 			break;
 		}
@@ -157,8 +158,8 @@ inline bool globox_open(
 	globox->title_wide = NULL;
 	globox_set_title(globox, title);
 
+	ShowWindow(globox->win_handle, SW_SHOWNORMAL);
 	globox_set_state(globox, state);
-	ShowWindow(globox->win_handle, SW_SHOWNORMAL); // TODO use state
 
 	// prepare bitmap info
 	// beware, some fields are not initialized here:
@@ -194,12 +195,6 @@ inline bool globox_handle_events(struct globox* globox)
 {
 	switch (globox->win_msg.message)
 	{
-		case WM_CLOSE:
-		{
-			DestroyWindow(globox->win_handle);
-
-			break;
-		}
 		case WM_DESTROY:
 		{
 			DeleteObject(globox->hbm);
@@ -207,19 +202,57 @@ inline bool globox_handle_events(struct globox* globox)
 
 			break;
 		}
+		case WM_SYSCOMMAND:
+		{
+			switch (globox->win_msg.wParam)
+			{
+				case SC_MAXIMIZE:
+				{
+					globox->state = GLOBOX_STATE_MAXIMIZED;
+
+					break;
+				}
+				case SC_MINIMIZE:
+				{
+					globox->state = GLOBOX_STATE_MINIMIZED;
+
+					break;
+				}
+				case SC_RESTORE:
+				{
+					globox->state = GLOBOX_STATE_REGULAR;
+
+					break;
+				}
+				case SC_CLOSE:
+				{
+					DestroyWindow(globox->win_handle);
+
+					break;
+				}
+			}
+
+			break;
+		}
 		case WM_PAINT:
 		{
-			globox->redraw = true;
+			if (globox->state != GLOBOX_STATE_MINIMIZED)
+			{
+				globox->redraw = true;
+			}
 
 			break;
 		}
 		case WM_SIZE:
 		{
-			globox->width = LOWORD(globox->win_msg.lParam);
-			globox->height = HIWORD(globox->win_msg.lParam);
-			globox->redraw = true;
+			if (globox->state != GLOBOX_STATE_MINIMIZED)
+			{
+				globox->width = LOWORD(globox->win_msg.lParam);
+				globox->height = HIWORD(globox->win_msg.lParam);
+				globox->redraw = true;
 
-			resize(globox);
+				resize(globox);
+			}
 
 			break;
 		}
@@ -373,18 +406,30 @@ inline void globox_set_state(struct globox* globox, enum globox_state state)
 	{
 		case GLOBOX_STATE_REGULAR:
 		{
+			if ((globox->state == GLOBOX_STATE_MINIMIZED)
+			|| (globox->state == GLOBOX_STATE_MAXIMIZED))
+			{
+				ShowWindow(globox->win_handle, SW_RESTORE);
+			}
+
 			break;
 		}
 		case GLOBOX_STATE_MAXIMIZED:
 		{
+			ShowWindow(globox->win_handle, SW_SHOWMAXIMIZED);
+
 			break;
 		}
 		case GLOBOX_STATE_MINIMIZED:
 		{
+			ShowWindow(globox->win_handle, SW_SHOWMINIMIZED);
+
 			break;
 		}
 		case GLOBOX_STATE_FULLSCREEN:
 		{
+			ShowWindow(globox->win_handle, SW_SHOWMAXIMIZED);
+
 			break;
 		}
 	}
