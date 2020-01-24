@@ -143,6 +143,7 @@ struct globox
 #ifdef GLOBOX_WIN
 	WNDCLASSEX win_class;
 	LPWSTR win_classname;
+	LPWSTR title_wide;
 	MSG win_msg;
 
 	HWND win_handle;

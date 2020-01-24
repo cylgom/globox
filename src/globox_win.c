@@ -154,6 +154,7 @@ inline bool globox_open(
 	UpdateWindow(globox->win_handle);
 
 	globox->title = NULL;
+	globox->title_wide = NULL;
 	globox_set_title(globox, title);
 
 	globox_set_state(globox, state);
@@ -337,12 +338,33 @@ inline void globox_set_icon(struct globox* globox, uint32_t* pixmap, uint32_t le
 
 inline void globox_set_title(struct globox* globox, const char* title)
 {
+	// update internal utf-8 string
 	if (globox->title != NULL)
 	{
 		free(globox->title);
 	}
 
 	globox->title = strdup(title);
+
+	// compute length
+	int len = MultiByteToWideChar(CP_UTF8, 0, globox->title, -1, NULL, 0);
+
+	// allocate
+	if (globox->title_wide != NULL)
+	{
+		free(globox->title_wide);
+	}
+
+	globox->title_wide = malloc((sizeof (wchar_t)) * len);
+
+	// safeguard against errors
+	globox->title_wide[0] = '\0';
+
+	// convert string
+	MultiByteToWideChar(CP_UTF8, 0, globox->title, -1, globox->title_wide, len);
+
+	// update title
+	SetWindowText(globox->win_handle, globox->title_wide);
 }
 
 inline void globox_set_state(struct globox* globox, enum globox_state state)
