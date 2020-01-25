@@ -157,8 +157,6 @@ inline bool globox_open(
 	globox->title = NULL;
 	globox->title_wide = NULL;
 	globox_set_title(globox, title);
-
-	ShowWindow(globox->win_handle, SW_SHOWNORMAL);
 	globox_set_state(globox, state);
 
 	// prepare bitmap info
@@ -402,15 +400,19 @@ inline void globox_set_title(struct globox* globox, const char* title)
 
 inline void globox_set_state(struct globox* globox, enum globox_state state)
 {
+	if ((globox->state == GLOBOX_STATE_FULLSCREEN) && (globox->state != state))
+	{
+		SetWindowLong(globox->win_handle, GWL_STYLE, globox->win_style_backup);
+		SetWindowLong(globox->win_handle, GWL_EXSTYLE, globox->win_style_ex_backup);
+		ShowWindow(globox->win_handle, SW_SHOWMAXIMIZED);
+		SetWindowPlacement(globox->win_handle, &(globox->win_fullscreen_pos_backup));
+	}
+
 	switch (state)
 	{
 		case GLOBOX_STATE_REGULAR:
 		{
-			if ((globox->state == GLOBOX_STATE_MINIMIZED)
-			|| (globox->state == GLOBOX_STATE_MAXIMIZED))
-			{
-				ShowWindow(globox->win_handle, SW_RESTORE);
-			}
+			ShowWindow(globox->win_handle, SW_SHOWNORMAL);
 
 			break;
 		}
@@ -428,7 +430,27 @@ inline void globox_set_state(struct globox* globox, enum globox_state state)
 		}
 		case GLOBOX_STATE_FULLSCREEN:
 		{
-			ShowWindow(globox->win_handle, SW_SHOWMAXIMIZED);
+			if (globox->state != GLOBOX_STATE_FULLSCREEN)
+			{
+				GetWindowPlacement(globox->win_handle, &(globox->win_fullscreen_pos_backup));
+
+				globox->win_style_backup = GetWindowLong(globox->win_handle, GWL_STYLE);
+				globox->win_style_ex_backup = GetWindowLong(globox->win_handle, GWL_EXSTYLE);
+
+				LONG style =
+					globox->win_style_backup
+					& ~WS_BORDER
+					& ~WS_DLGFRAME
+					& ~WS_THICKFRAME;
+
+				LONG style_ex =
+					globox->win_style_ex_backup
+					& ~WS_EX_WINDOWEDGE;
+
+				SetWindowLong(globox->win_handle, GWL_STYLE, style | WS_POPUP);
+				SetWindowLong(globox->win_handle, GWL_EXSTYLE, style_ex | WS_EX_TOPMOST);
+				ShowWindow(globox->win_handle, SW_SHOWMAXIMIZED);
+			}
 
 			break;
 		}

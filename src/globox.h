@@ -149,6 +149,10 @@ struct globox
 	HWND win_handle;
 	BITMAPINFO bmp_info;
 	HBITMAP hbm;
+
+	WINDOWPLACEMENT win_fullscreen_pos_backup;
+	LONG win_style_backup;
+	LONG win_style_ex_backup;
 #endif
 };
 
