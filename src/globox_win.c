@@ -12,13 +12,37 @@
 // dummy event callback we exceptionally put here to avoid pointless complexity
 LRESULT CALLBACK win_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	// we must post some messages manually for reasons
+	// unpollable events transmission
 	switch (msg)
 	{
-		case WM_SIZE:
+		case WM_WINDOWPOSCHANGING:
+		case WM_WINDOWPOSCHANGED:
+		{
+			WINDOWPOS* win = (WINDOWPOS*) lParam;
+			LPARAM new_param = MAKELPARAM(win->cx, win->cy);
+
+			if ((win->cx != 0) && (win->cy != 0))
+			{
+				PostMessage(hwnd, WM_SIZE, wParam, new_param);
+			}
+
+			// don't return 0 just in case
+			break;
+		}
 		case WM_SYSCOMMAND:
 		{
-			PostMessage(hwnd, msg, wParam, lParam);
+			switch (wParam)
+			{
+				case SC_MAXIMIZE:
+				case SC_MINIMIZE:
+				case SC_RESTORE:
+				{
+					PostMessage(hwnd, msg, wParam, lParam);
+
+					// don't return 0 just in case
+					break;
+				}
+			}
 
 			break;
 		}
@@ -191,6 +215,8 @@ inline void globox_close(struct globox* globox)
 
 inline bool globox_handle_events(struct globox* globox)
 {
+	bool transmission = true;
+
 	switch (globox->win_msg.message)
 	{
 		case WM_DESTROY:
@@ -207,18 +233,21 @@ inline bool globox_handle_events(struct globox* globox)
 				case SC_MAXIMIZE:
 				{
 					globox->state = GLOBOX_STATE_MAXIMIZED;
+					transmission = false;
 
 					break;
 				}
 				case SC_MINIMIZE:
 				{
 					globox->state = GLOBOX_STATE_MINIMIZED;
+					transmission = false;
 
 					break;
 				}
 				case SC_RESTORE:
 				{
 					globox->state = GLOBOX_STATE_REGULAR;
+					transmission = false;
 
 					break;
 				}
@@ -254,13 +283,13 @@ inline bool globox_handle_events(struct globox* globox)
 
 			break;
 		}
-		default:
-		{
-			TranslateMessage(&(globox->win_msg));
-			DispatchMessage(&(globox->win_msg));
+	}
 
-			break;
-		}
+	// be careful not to dispatch unpollable events again
+	if (transmission == true)
+	{
+		TranslateMessage(&(globox->win_msg));
+		DispatchMessage(&(globox->win_msg));
 	}
 
 	return true;
