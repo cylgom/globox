@@ -1,8 +1,7 @@
 NAME = globox
-#CC = gcc
-CC = x86_64-w64-mingw32-gcc
+CC = gcc
 FLAGS = -std=c99 -pedantic -g
-FLAGS+= -Wall -Wno-unused-parameter -Wextra -Werror=vla -Werror
+FLAGS+= -Wall -Wextra -Werror=vla -Werror -Wno-unused-parameter 
 VALGRIND = --show-leak-kinds=all --track-origins=yes --leak-check=full --suppressions=../res/valgrind.supp
 CMD = ./$(NAME)
 
@@ -20,13 +19,13 @@ SRCS_OBJS = $(OBJD)/$(RESD)/icon/iconpix.o
 LINK =
 
 RENDER ?= swr
-BACKEND ?= win
+BACKEND ?= quartz
 
 # rendering backends
 ## software
 ifeq ($(RENDER), swr)
 FLAGS+= -DGLOBOX_RENDER_SWR
-SRCS = $(SRCD)/main_epoll.c
+SRCS = $(SRCD)/main_kqueue.c
 endif
 
 ## vulkan
@@ -68,12 +67,26 @@ endif
 
 ## win
 ifeq ($(BACKEND), win)
+CC = x86_64-w64-mingw32-gcc
 FLAGS+= -DGLOBOX_WIN -DUNICODE -D_UNICODE
 SRCS = $(SRCD)/main_win_getmessage.c
 SRCS+= $(SRCD)/win.c
 SRCS+= $(SRCD)/globox_win.c
 LINK+= -lgdi32 -mwindows
 CMD = wine ./$(NAME)
+.PHONY: final
+final: $(BIND)/$(NAME)
+endif
+
+## quartz
+ifeq ($(BACKEND), quartz)
+CC = o64-clang
+FLAGS+= -DGLOBOX_QUARTZ
+SRCS+= $(SRCD)/quartz.c
+SRCS+= $(SRCD)/globox_quartz.c
+SRCS_OBJS =
+LINK+= -framework AppKit
+#CMD = wine ./$(NAME)
 .PHONY: final
 final: $(BIND)/$(NAME)
 endif

@@ -33,6 +33,11 @@
 #include <windows.h>
 #endif
 
+#ifdef GLOBOX_QUARTZ
+#include <objc/message.h>
+#include <objc/runtime.h>
+#endif
+
 // structures
 enum globox_state
 {
@@ -153,6 +158,10 @@ struct globox
 	WINDOWPLACEMENT win_fullscreen_pos_backup;
 	LONG win_style_backup;
 	LONG win_style_ex_backup;
+#endif
+
+#ifdef GLOBOX_QUARTZ
+	Class quartz_app_delegate;
 #endif
 };
 
