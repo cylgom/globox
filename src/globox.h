@@ -161,7 +161,8 @@ struct globox
 #endif
 
 #ifdef GLOBOX_QUARTZ
-	Class quartz_app_delegate;
+	Class quartz_view;
+	Class quartz_app;
 #endif
 };
 

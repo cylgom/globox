@@ -11,8 +11,6 @@
 #include "quartz.h"
 
 extern id NSApp;
-Class view;
-Class app;
 
 inline bool globox_open(
 	struct globox* globox,
@@ -39,28 +37,32 @@ inline bool globox_open(
 	{
 		//globox->fd_frame = timerfd_create(CLOCK_REALTIME, 0);
 	}
-	view = objc_allocateClassPair(
+
+	globox->quartz_view = objc_allocateClassPair(
 		(Class) objc_getClass("NSView"),
 		"View",
 		0);
+
 	class_addMethod(
-		view,
+		globox->quartz_view,
 		sel_getUid("drawRect:"),
 		(IMP) quartz_rect,
 		"v@:");
-	objc_registerClassPair(view);
 
-	app = objc_allocateClassPair(
+	objc_registerClassPair(globox->quartz_view);
+
+	globox->quartz_app = objc_allocateClassPair(
 		(Class) objc_getClass("NSObject"),
 		"AppDelegate",
 		0);
+
 	class_addMethod(
-		app,
+		globox->quartz_app,
 		sel_getUid("applicationDidFinishLaunching:"),
 		(IMP) post_launch,
 		"i@:@");
-	objc_registerClassPair(
-		app);
+
+	objc_registerClassPair(globox->quartz_app);
 
 	quartz_msg_void(
 		(id) objc_getClass("NSApplication"),
@@ -74,21 +76,22 @@ inline bool globox_open(
 	id app_delegate_obj = quartz_msg_id(
 		(id) objc_getClass("AppDelegate"),
 		sel_getUid("alloc"));
+
 	app_delegate_obj = quartz_msg_id(
 		app_delegate_obj,
 		sel_getUid("init"));
+
+	// TODO ERROR
 	quartz_msg_ptr(
 		NSApp,
 		sel_getUid("setDelegate:"),
 		app_delegate_obj);
-	// TODO ERROR
+
 	quartz_msg_void(
 		NSApp,
 		sel_getUid("run"));
 
-	// TODO
-	globox->fd.descriptor = 0;
-
+	globox->fd.descriptor = 0; // TODO
 	globox->title = NULL;
 	globox_set_title(globox, title);
 	globox_set_state(globox, state);

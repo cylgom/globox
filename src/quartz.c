@@ -7,12 +7,16 @@
 // fucking Objective-C
 id(*quartz_msg_id)(id, SEL) =
 	(id(*)(id, SEL)) objc_msgSend;
+
 void(*quartz_msg_void)(id, SEL) =
 	(void(*)(id, SEL)) objc_msgSend;
+
 void(*quartz_msg_ptr)(id, SEL, void*) =
 	(void(*)(id, SEL, void*)) objc_msgSend;
+
 id(*quartz_msg_rect)(id, SEL, struct quartz_rect) =
 	(id(*)(id, SEL, struct quartz_rect)) objc_msgSend;
+
 id(*quartz_msg_win)(id, SEL, struct quartz_rect, int, int, bool) =
 	(id(*)(id, SEL, struct quartz_rect, int, int, bool)) objc_msgSend;
 
