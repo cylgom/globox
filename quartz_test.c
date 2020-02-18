@@ -85,6 +85,14 @@ struct globox
 
 struct globox ctx;
 
+void quartz_app_delegate_run(
+	struct quartz_app_delegate* app_delegate,
+	SEL cmd,
+	id msg)
+{
+
+}
+
 // callbacks
 void quartz_view_draw_rect_callback(
 	id app,
@@ -284,6 +292,13 @@ int main(int argc, char** argv)
 		"globox",
 		globox);
 
+	// override run method
+	class_addMethod(
+		globox->quartz_view_class,
+		sel_getUid("run:"),
+		(IMP) quartz_app_delegate_run,
+		"v@:");
+
 	// run AppDelegate init
 	globox->quartz_app_delegate_obj = quartz_msg_id(
 		globox->quartz_app_delegate_obj,
@@ -296,10 +311,32 @@ int main(int argc, char** argv)
 		sel_getUid("setDelegate:"),
 		globox->quartz_app_delegate_obj);
 
+	// we made it
+	quartz_msg_void(
+		NSApp,
+		sel_getUid("finishLaunching"));
+
 	// run NSApp singleton
 	quartz_msg_void(
 		NSApp,
 		sel_getUid("run"));
 
+// EXAMPLE LOOP
+	while (true)
+	{
+
+	}
+// END EXAMPLE LOOP
+
 	return 0;
 }
+
+// TODO (other globox functions have no effect under macOS)
+// handle events
+// commit
+// set state
+// set title
+// close
+// get size
+// get title
+// get state
