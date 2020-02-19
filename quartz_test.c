@@ -4,8 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-extern id NSApp;
-
 // structs
 enum NSBackingStoreType
 {
@@ -69,15 +67,24 @@ extern void NSRectFill(struct quartz_rect rect);
 extern SEL NSSelectorFromString(const char*);
 
 // tmp
+union globox_event
+{
+	int descriptor;
+	void* handle;
+	id app;
+};
+
 struct globox
 {
 	uint32_t init_x;
 	uint32_t init_y;
 	uint32_t width;
 	uint32_t height;
+	union globox_event fd;
 
 	Class quartz_app_delegate_class;
 	Class quartz_view_class;
+	Class quartz_app_class;
 
 	id quartz_app_delegate_obj;
 	id quartz_view_obj;
@@ -85,8 +92,8 @@ struct globox
 
 struct globox ctx;
 
-void quartz_app_delegate_run(
-	struct quartz_app_delegate* app_delegate,
+void quartz_app_run(
+	id app,
 	SEL cmd,
 	id msg)
 {
@@ -270,17 +277,30 @@ int main(int argc, char** argv)
 		"^v");
 // END
 
-	// start NSApplication
-	quartz_msg_void(
-		(id) objc_getClass("NSApplication"), 
+// FUNC2
+	// create NSApplication subclass
+	globox->quartz_app_class = objc_allocateClassPair(
+		(Class) objc_getClass("NSApplication"),
+		"App",
+		0);
+
+#if 0
+	// override run method
+	class_addMethod(
+		globox->quartz_app_class,
+		sel_getUid("run"),
+		(IMP) quartz_app_run,
+		"v@:");
+#endif
+
+	id app = quartz_msg_id(
+		(id) globox->quartz_app_class,
 		sel_getUid("sharedApplication"));
 
-	if (NSApp == NULL)
-	{
-		return 1;
-	}
+	globox->fd.app = app;
+// END
 
-// FUNC2
+// FUNC3
 	// create an AppDelegate instance
 	globox->quartz_app_delegate_obj = quartz_msg_id(
 		(id) globox->quartz_app_delegate_class,
@@ -292,34 +312,29 @@ int main(int argc, char** argv)
 		"globox",
 		globox);
 
-	// override run method
-	class_addMethod(
-		globox->quartz_view_class,
-		sel_getUid("run:"),
-		(IMP) quartz_app_delegate_run,
-		"v@:");
-
 	// run AppDelegate init
 	globox->quartz_app_delegate_obj = quartz_msg_id(
 		globox->quartz_app_delegate_obj,
 		sel_getUid("init"));
 // END
 
+// FUNC4
 	// attach AppDelegate to NSApp singleton
 	quartz_msg_ptr(
-		NSApp,
+		app,
 		sel_getUid("setDelegate:"),
 		globox->quartz_app_delegate_obj);
 
 	// we made it
 	quartz_msg_void(
-		NSApp,
+		app,
 		sel_getUid("finishLaunching"));
 
 	// run NSApp singleton
 	quartz_msg_void(
-		NSApp,
+		app,
 		sel_getUid("run"));
+// END
 
 // EXAMPLE LOOP
 	while (true)
