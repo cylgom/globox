@@ -10,6 +10,11 @@ enum NSBackingStoreType
 	NSBackingStoreBuffered = 2,
 };
 
+enum NSEventType
+{
+	NSEventTypeApplicationDefined = 15,
+};
+
 enum NSWindowStyleMask
 {
 	NSWindowStyleMaskTitled = 1,
@@ -17,6 +22,11 @@ enum NSWindowStyleMask
 	NSWindowStyleMaskMiniaturizable = 4,
 	NSWindowStyleMaskResizable = 8,
 	NSWindowStyleMaskFullScreen = 16384,
+};
+
+enum NSEventMask
+{
+	NSEventMaskAny = 0xFFFFFFFFFFFFFFFF,
 };
 
 struct quartz_point
@@ -47,14 +57,29 @@ struct quartz_app_delegate
 id(*quartz_msg_id)(id, SEL) =
 	(id(*)(id, SEL)) objc_msgSend;
 
+id*(*quartz_msg_date)(id, SEL) =
+	(id*(*)(id, SEL)) objc_msgSend;
+
+bool(*quartz_msg_bool)(id, SEL) =
+	(bool(*)(id, SEL)) objc_msgSend;
+
 void(*quartz_msg_void)(id, SEL) =
 	(void(*)(id, SEL)) objc_msgSend;
 
-unsigned long(*quartz_msg_ulong)(id, SEL) =
+unsigned long(*quartz_msg_type)(id, SEL) =
 	(unsigned long(*)(id, SEL)) objc_msgSend;
 
 void(*quartz_msg_ptr)(id, SEL, void*) =
 	(void(*)(id, SEL, void*)) objc_msgSend;
+
+void(*quartz_msg_send)(id, SEL, id*) =
+	(void(*)(id, SEL, id*)) objc_msgSend;
+
+void(*quartz_msg_post)(id, SEL, id*, bool) =
+	(void(*)(id, SEL, id*, bool)) objc_msgSend;
+
+id*(*quartz_msg_event)(id, SEL, unsigned long, struct quartz_point, unsigned long, double, long, id, short, long, long) =
+	(id*(*)(id, SEL, unsigned long, struct quartz_point, unsigned long, double, long, id, short, long, long)) objc_msgSend;
 
 id(*quartz_msg_rect)(id, SEL, struct quartz_rect) =
 	(id(*)(id, SEL, struct quartz_rect)) objc_msgSend;
@@ -62,9 +87,13 @@ id(*quartz_msg_rect)(id, SEL, struct quartz_rect) =
 id(*quartz_msg_win)(id, SEL, struct quartz_rect, int, int, bool) =
 	(id(*)(id, SEL, struct quartz_rect, int, int, bool)) objc_msgSend;
 
+id*(*quartz_msg_poll)(id, SEL, unsigned long long, id*, id*, bool) =
+	(id*(*)(id, SEL, unsigned long long, id*, id*, bool)) objc_msgSend;
+
 extern void* CGBitmapContextGetData(id);
 extern void NSRectFill(struct quartz_rect rect);
 extern SEL NSSelectorFromString(const char*);
+extern id* NSDefaultRunLoopMode;
 
 // tmp
 union globox_event
@@ -84,7 +113,6 @@ struct globox
 
 	Class quartz_app_delegate_class;
 	Class quartz_view_class;
-	Class quartz_app_class;
 
 	id quartz_app_delegate_obj;
 	id quartz_view_obj;
@@ -92,12 +120,25 @@ struct globox
 
 struct globox ctx;
 
-void quartz_app_run(
-	id app,
-	SEL cmd,
-	id msg)
+void handler(int sig)
 {
+	id* event = quartz_msg_poll(
+		ctx.fd.app,
+		sel_getUid("nextEventMatchingMask:untilDate:inMode:dequeue:"),
+		NSEventMaskAny,
+		NULL, // defaults to distantPast
+		NSDefaultRunLoopMode,
+		true);
 
+	if (event != NULL)
+	{
+		quartz_msg_send(
+			ctx.fd.app,
+			sel_getUid("sendEvent:"),
+			event);
+
+		printf("event sent\n");
+	}
 }
 
 // callbacks
@@ -228,6 +269,12 @@ bool quartz_app_delegate_init_callback(
 		sel_getUid("makeKeyAndOrderFront:"),
 		app_delegate);
 
+	// escape the pesky default event loop
+	quartz_msg_ptr(
+		globox->fd.app,
+		sel_getUid("stop:"),
+		NULL);
+
 	return true;
 }
 
@@ -277,28 +324,11 @@ int main(int argc, char** argv)
 		"^v");
 // END
 
-// FUNC2
-	// create NSApplication subclass
-	globox->quartz_app_class = objc_allocateClassPair(
-		(Class) objc_getClass("NSApplication"),
-		"App",
-		0);
-
-#if 0
-	// override run method
-	class_addMethod(
-		globox->quartz_app_class,
-		sel_getUid("run"),
-		(IMP) quartz_app_run,
-		"v@:");
-#endif
-
 	id app = quartz_msg_id(
-		(id) globox->quartz_app_class,
+		(id) objc_getClass("NSApplication"),
 		sel_getUid("sharedApplication"));
 
 	globox->fd.app = app;
-// END
 
 // FUNC3
 	// create an AppDelegate instance
@@ -330,16 +360,38 @@ int main(int argc, char** argv)
 		app,
 		sel_getUid("finishLaunching"));
 
-	// run NSApp singleton
+	// create the happy little window
 	quartz_msg_void(
 		app,
 		sel_getUid("run"));
 // END
 
+	while (quartz_msg_bool(app, sel_getUid("isRunning")));
+
 // EXAMPLE LOOP
+	id* future = quartz_msg_date(
+		(id) objc_getClass("NSDate"),
+		sel_getUid("distantFuture"));
+
 	while (true)
 	{
+		id* event = quartz_msg_poll(
+			ctx.fd.app,
+			sel_getUid("nextEventMatchingMask:untilDate:inMode:dequeue:"),
+			NSEventMaskAny,
+			future,
+			NSDefaultRunLoopMode,
+			true);
 
+		if (event != NULL)
+		{
+			quartz_msg_send(
+				ctx.fd.app,
+				sel_getUid("sendEvent:"),
+				event);
+
+			handler(0);
+		}
 	}
 // END EXAMPLE LOOP
 
@@ -347,7 +399,6 @@ int main(int argc, char** argv)
 }
 
 // TODO (other globox functions have no effect under macOS)
-// handle events
 // commit
 // set state
 // set title
