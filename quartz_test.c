@@ -381,15 +381,10 @@ int main(int argc, char** argv)
 			NSEventMaskAny,
 			future,
 			NSDefaultRunLoopMode,
-			true);
+			false);
 
 		if (event != NULL)
 		{
-			quartz_msg_send(
-				ctx.fd.app,
-				sel_getUid("sendEvent:"),
-				event);
-
 			handler(0);
 		}
 	}
