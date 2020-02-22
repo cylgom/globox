@@ -66,8 +66,8 @@ bool(*quartz_msg_bool)(id, SEL) =
 void(*quartz_msg_void)(id, SEL) =
 	(void(*)(id, SEL)) objc_msgSend;
 
-unsigned long(*quartz_msg_type)(id, SEL) =
-	(unsigned long(*)(id, SEL)) objc_msgSend;
+unsigned long(*quartz_msg_type)(id*, SEL) =
+	(unsigned long(*)(id*, SEL)) objc_msgSend;
 
 void(*quartz_msg_ptr)(id, SEL, void*) =
 	(void(*)(id, SEL, void*)) objc_msgSend;
@@ -103,6 +103,15 @@ union globox_event
 	id app;
 };
 
+enum globox_quartz_window_event
+{
+	GLOBOX_QUARTZ_WINDOW_EVENT_MAXIMIZE_TOGGLE = 0,
+	GLOBOX_QUARTZ_WINDOW_EVENT_MINIMIZE_ON,
+	GLOBOX_QUARTZ_WINDOW_EVENT_MINIMIZE_OFF,
+	GLOBOX_QUARTZ_WINDOW_EVENT_FULLSCREEN_ON,
+	GLOBOX_QUARTZ_WINDOW_EVENT_FULLSCREEN_OFF,
+};
+
 struct globox
 {
 	uint32_t init_x;
@@ -132,12 +141,27 @@ void handler(int sig)
 
 	if (event != NULL)
 	{
-		quartz_msg_send(
-			ctx.fd.app,
-			sel_getUid("sendEvent:"),
-			event);
+		unsigned long type =
+			quartz_msg_type(event, sel_getUid("type"));
 
-		printf("event sent\n");
+		printf("%lu\n", type);
+
+		if (type == NSEventTypeApplicationDefined)
+		{
+			short subtype =
+				quartz_msg_type(event, sel_getUid("subtype"));
+
+			printf("custom event received: %hd\n", subtype);
+		}
+		else
+		{
+			quartz_msg_send(
+				ctx.fd.app,
+				sel_getUid("sendEvent:"),
+				event);
+
+			printf("event sent\n");
+		}
 	}
 }
 
@@ -189,6 +213,84 @@ void quartz_view_draw_rect_callback(
 	}
 }
 
+void quartz_window_event(enum globox_quartz_window_event quartz_window_event)
+{
+	// create custom internal event
+	struct quartz_point point =
+	{
+		.x = 0.0,
+		.y = 0.0,
+	};
+
+	id* event = quartz_msg_event(
+		(id) objc_getClass("NSEvent"),
+		sel_getUid("otherEventWithType:location:modifierFlags:timestamp:windowNumber:context:subtype:data1:data2:"),
+		NSEventTypeApplicationDefined,
+		point,
+		0,
+		0,
+		0,
+		NULL,
+		quartz_window_event,
+		0,
+		0);
+
+	// get app singleton
+	id app = quartz_msg_id(
+		(id) objc_getClass("NSApplication"),
+		sel_getUid("sharedApplication"));
+
+	// send custom event to main thread
+	quartz_msg_post(
+		app,
+		sel_getUid("postEvent:atStart:"),
+		event,
+		true);
+}
+
+struct quartz_rect quartz_window_event_maximize_toggle(
+	id window_delegate,
+	SEL cmd,
+	id* window,
+	struct quartz_rect rect)
+{
+	quartz_window_event(GLOBOX_QUARTZ_WINDOW_EVENT_MAXIMIZE_TOGGLE);
+
+	return rect;
+}
+
+void quartz_window_event_minimize_on(
+	id window_delegate,
+	SEL cmd,
+	id* notif)
+{
+	quartz_window_event(GLOBOX_QUARTZ_WINDOW_EVENT_MINIMIZE_ON);
+}
+
+void quartz_window_event_minimize_off(
+	id window_delegate,
+	SEL cmd,
+	id* notif)
+{
+	quartz_window_event(GLOBOX_QUARTZ_WINDOW_EVENT_MINIMIZE_OFF);
+}
+
+void quartz_window_event_fullscreen_on(
+	id window_delegate,
+	SEL cmd,
+	id* notif)
+{
+	quartz_window_event(GLOBOX_QUARTZ_WINDOW_EVENT_FULLSCREEN_ON);
+}
+
+void quartz_window_event_fullscreen_off(
+	id window_delegate,
+	SEL cmd,
+	id* notif)
+{
+	quartz_window_event(GLOBOX_QUARTZ_WINDOW_EVENT_FULLSCREEN_OFF);
+}
+
 bool quartz_app_delegate_init_callback(
 	struct quartz_app_delegate* app_delegate,
 	SEL cmd,
@@ -205,16 +307,11 @@ bool quartz_app_delegate_init_callback(
 	struct globox* globox = (struct globox*) out;
 
 	// window
-	enum NSWindowStyleMask states =
-#if 0
+	int states =
 		NSWindowStyleMaskTitled
 		| NSWindowStyleMaskClosable
 		| NSWindowStyleMaskMiniaturizable
-		| NSWindowStyleMaskResizable
-		| NSWindowStyleMaskFullScreen;
-#else
-	0;
-#endif
+		| NSWindowStyleMaskResizable;
 
 	struct quartz_rect rect_win =
 	{
@@ -235,6 +332,53 @@ bool quartz_app_delegate_init_callback(
 		states,
 		NSBackingStoreBuffered,
 		false);
+
+	// window delegate
+	Class window_delegate_class = objc_allocateClassPair(
+		(Class) objc_getClass("NSObject"),
+		"WindowDelegate",
+		0);
+
+	// inject methods
+	class_addMethod(
+		window_delegate_class,
+		sel_getUid("windowWillUseStandardFrame:defaultFrame:"),
+		(IMP) quartz_window_event_maximize_toggle,
+		"v@:^@:@");
+
+	class_addMethod(
+		window_delegate_class,
+		sel_getUid("windowWillMiniaturize:"),
+		(IMP) quartz_window_event_minimize_on,
+		"v@:^@");
+
+	class_addMethod(
+		window_delegate_class,
+		sel_getUid("windowDidDeminiaturize:"),
+		(IMP) quartz_window_event_minimize_off,
+		"v@:^@");
+
+	class_addMethod(
+		window_delegate_class,
+		sel_getUid("windowWillEnterFullScreen:"),
+		(IMP) quartz_window_event_fullscreen_on,
+		"v@:^@");
+
+	class_addMethod(
+		window_delegate_class,
+		sel_getUid("windowWillExitFullScreen:"),
+		(IMP) quartz_window_event_fullscreen_off,
+		"v@:^@");
+
+	id window_delegate = quartz_msg_id(
+		(id) window_delegate_class,
+		sel_getUid("alloc"));
+
+	// register in the application delegate
+	quartz_msg_ptr(
+		app_delegate->window,
+		sel_getUid("setDelegate:"),
+		window_delegate);
 
 	// view
 	struct quartz_rect rect_view =
@@ -394,10 +538,10 @@ int main(int argc, char** argv)
 }
 
 // TODO (other globox functions have no effect under macOS)
-// commit
 // set state
 // set title
 // close
+// commit
 // get size
 // get title
 // get state
