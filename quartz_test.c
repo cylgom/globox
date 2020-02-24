@@ -572,10 +572,14 @@ int main(int argc, char** argv)
 }
 
 // TODO (other globox functions have no effect under macOS)
-// set state
-// set title
-// close
-// commit
+//// need event handler & proper source inclusion
+// register state
+// close after click
+//// easy
+// close programmatically
+// set title programmatically
 // get size
 // get title
 // get state
+//// ????
+// commit
