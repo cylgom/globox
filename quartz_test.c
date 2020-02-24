@@ -1,10 +1,17 @@
+#define _XOPEN_SOURCE 700
 #include <objc/message.h>
 #include <objc/runtime.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 // structs
+enum NSStringEncoding
+{
+	NSUTF8StringEncoding = 4,
+};
+
 enum NSBackingStoreType
 {
 	NSBackingStoreBuffered = 2,
@@ -72,8 +79,14 @@ unsigned long(*quartz_msg_type)(id*, SEL) =
 void(*quartz_msg_ptr)(id, SEL, void*) =
 	(void(*)(id, SEL, void*)) objc_msgSend;
 
+void(*quartz_msg_obj)(id, SEL, id) =
+	(void(*)(id, SEL, id)) objc_msgSend;
+
 void(*quartz_msg_send)(id, SEL, id*) =
 	(void(*)(id, SEL, id*)) objc_msgSend;
+
+id(*quartz_msg_string)(id, SEL, const char*, unsigned long) =
+	(id(*)(id, SEL, const char*, unsigned long)) objc_msgSend;
 
 void(*quartz_msg_post)(id, SEL, id*, bool) =
 	(void(*)(id, SEL, id*, bool)) objc_msgSend;
@@ -118,6 +131,7 @@ struct globox
 	uint32_t init_y;
 	uint32_t width;
 	uint32_t height;
+	char* title;
 	union globox_event fd;
 
 	Class quartz_app_delegate_class;
@@ -419,6 +433,18 @@ bool quartz_app_delegate_init_callback(
 		sel_getUid("stop:"),
 		NULL);
 
+	// set title
+	id string = quartz_msg_string(
+		(id) objc_getClass("NSString"),
+		sel_getUid("stringWithCString:encoding:"),
+		globox->title,
+		NSUTF8StringEncoding);
+
+	quartz_msg_obj(
+		app_delegate->window,
+		sel_getUid("setTitle:"),
+		string);
+
 	return true;
 }
 
@@ -426,10 +452,18 @@ int main(int argc, char** argv)
 {
 	struct globox* globox = &ctx;
 
+	// parameters
+	char* title = "globox";
+
+	// common init
 	globox->init_x = 0;
 	globox->init_y = 0;
 	globox->width = 100;
 	globox->height = 100;
+	globox->title = NULL;
+
+	// pre-init title
+	globox->title = strdup(title);
 
 // FUNC0
 	// create View class
