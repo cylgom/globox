@@ -1,57 +1,54 @@
-#ifndef H_GLOBOX_QUARTZ
-#define H_GLOBOX_QUARTZ
+#ifndef H_QUARTZ
+#define H_QUARTZ
 
-#include "globox.h"
-#include <objc/message.h>
-#include <objc/runtime.h>
+#include "quartz_helpers.h"
 
-enum NSWindowStyleMask
+enum globox_quartz_window_event
 {
-	NSWindowStyleMaskTitled = 1,
-	NSWindowStyleMaskClosable = 2,
-	NSWindowStyleMaskMiniaturizable = 4,
-	NSWindowStyleMaskResizable = 8,
-	NSWindowStyleMaskFullScreen = 16384,
+	GLOBOX_QUARTZ_WINDOW_EVENT_MAXIMIZE_TOGGLE,
+	GLOBOX_QUARTZ_WINDOW_EVENT_MINIMIZE_ON,
+	GLOBOX_QUARTZ_WINDOW_EVENT_MINIMIZE_OFF,
+	GLOBOX_QUARTZ_WINDOW_EVENT_FULLSCREEN_ON,
+	GLOBOX_QUARTZ_WINDOW_EVENT_FULLSCREEN_OFF,
 };
 
-enum NSBackingStoreType
-{
-	NSBackingStoreBuffered = 2,
-};
+void quartz_view_draw_rect_callback(
+	id app,
+	SEL cm,
+	struct quartz_rect rect);
 
-struct quartz_point
-{
-	double x;
-	double y;
-};
+void quartz_window_event(
+	enum globox_quartz_window_event quartz_window_event);
 
-struct quartz_size
-{
-	double width;
-	double height;
-};
+struct quartz_rect quartz_window_event_maximize_toggle(
+	id window_delegate,
+	SEL cmd,
+	id* window,
+	struct quartz_rect rect);
 
-struct quartz_rect
-{
-	struct quartz_point origin;
-	struct quartz_size size;
-};
+void quartz_window_event_minimize_on(
+	id window_delegate,
+	SEL cmd,
+	id* notif);
 
-struct quartz_app
-{
-	Class isa;
-	id window;
-};
+void quartz_window_event_minimize_off(
+	id window_delegate,
+	SEL cmd,
+	id* notif);
 
-extern id(*quartz_msg_id)(id, SEL);
-extern void(*quartz_msg_void)(id, SEL);
-extern void(*quartz_msg_ptr)(id, SEL, void*);
-extern id(*quartz_msg_rect)(id, SEL, struct quartz_rect);
-extern id(*quartz_msg_win)(id, SEL, struct quartz_rect, int, int, bool);
-extern void NSRectFill(struct quartz_rect rect);
+void quartz_window_event_fullscreen_on(
+	id window_delegate,
+	SEL cmd,
+	id* notif);
 
-void set_pointer(struct globox* globox);
-void quartz_rect(id app, SEL cmd, struct quartz_rect rect);
-bool post_launch(struct quartz_app* app, SEL cmd, id msg);
+void quartz_window_event_fullscreen_off(
+	id window_delegate,
+	SEL cmd,
+	id* notif);
+
+bool quartz_app_delegate_init_callback(
+	struct quartz_app_delegate* app_delegate,
+	SEL cmd,
+	id msg);
 
 #endif

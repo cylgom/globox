@@ -25,7 +25,7 @@ BACKEND ?= quartz
 ## software
 ifeq ($(RENDER), swr)
 FLAGS+= -DGLOBOX_RENDER_SWR
-SRCS = $(SRCD)/main_kqueue.c
+SRCS = $(SRCD)/main_quartz.c
 endif
 
 ## vulkan
@@ -83,8 +83,9 @@ ifeq ($(BACKEND), quartz)
 CC = o64-clang
 FLAGS+= -DGLOBOX_QUARTZ
 SRCS+= $(SRCD)/quartz.c
+SRCS+= $(SRCD)/quartz_helpers.c
 SRCS+= $(SRCD)/globox_quartz.c
-SRCS_OBJS =
+SRCS_OBJS = $(OBJD)/$(RESD)/icon/iconpix_mach.o
 LINK+= -framework AppKit
 #CMD = wine ./$(NAME)
 .PHONY: final
@@ -118,6 +119,10 @@ $(OBJD)/$(RESD)/icon/iconpix.o: $(RESD)/icon/iconpix.bin
 	--redefine-syms=$(RESD)/icon/syms.map \
 	--rename-section .data=.iconpix \
 	$< $@
+
+$(OBJD)/$(RESD)/icon/iconpix_mach.o: $(OBJD)/$(RESD)/icon/iconpix.o
+	@echo "converting icon object to mach-o ABI"
+	@objconv -fmac64 -nu+ -v0 $< $@
 
 ## generic compiling command
 $(OBJD)/%.o: %.c

@@ -51,6 +51,7 @@ union globox_event
 {
 	int descriptor;
 	void* handle;
+	void* app;
 };
 
 struct globox
@@ -161,8 +162,10 @@ struct globox
 #endif
 
 #ifdef GLOBOX_QUARTZ
-	Class quartz_view;
-	Class quartz_app;
+	Class quartz_app_delegate_class;
+	Class quartz_view_class;
+	id quartz_app_delegate_obj;
+	id quartz_view_obj;
 #endif
 };
 
