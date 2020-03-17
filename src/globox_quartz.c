@@ -141,13 +141,12 @@ inline bool globox_handle_events(struct globox* globox)
 		unsigned long type =
 			quartz_msg_type(event, sel_getUid("type"));
 
-		printf("%lu\n", type);
+		printf("event type: %lu\n", type);
 
 		if (type == NSEventTypeApplicationDefined)
 		{
 			short subtype =
 				quartz_msg_type(event, sel_getUid("subtype"));
-
 			long data =
 				quartz_msg_type(event, sel_getUid("data1"));
 
@@ -158,41 +157,34 @@ inline bool globox_handle_events(struct globox* globox)
 
 				switch (data)
 				{
-					case GLOBOX_QUARTZ_WINDOW_EVENT_MAXIMIZE_TOGGLE:
+					case GLOBOX_QUARTZ_WINDOW_EVENT_MAXIMIZE_ON:
 					{
-						if (globox->state == GLOBOX_STATE_MAXIMIZED)
-						{
-							globox->state = globox->quartz_state_old;
-						}
-						else
-						{
-							globox->state = GLOBOX_STATE_MAXIMIZED;
-						}
-
+						globox->state = GLOBOX_STATE_MAXIMIZED;
+						break;
+					}
+					case GLOBOX_QUARTZ_WINDOW_EVENT_MAXIMIZE_OFF:
+					{
+						globox->state = GLOBOX_STATE_REGULAR;
 						break;
 					}
 					case GLOBOX_QUARTZ_WINDOW_EVENT_MINIMIZE_ON:
 					{
 						globox->state = GLOBOX_STATE_MINIMIZED;
-
 						break;
 					}
 					case GLOBOX_QUARTZ_WINDOW_EVENT_MINIMIZE_OFF:
 					{
 						globox->state = globox->quartz_state_old;
-
 						break;
 					}
 					case GLOBOX_QUARTZ_WINDOW_EVENT_FULLSCREEN_ON:
 					{
 						globox->state = GLOBOX_STATE_FULLSCREEN;
-
 						break;
 					}
 					case GLOBOX_QUARTZ_WINDOW_EVENT_FULLSCREEN_OFF:
 					{
 						globox->state = globox->quartz_state_old;
-
 						break;
 					}
 				}

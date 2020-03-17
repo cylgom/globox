@@ -91,15 +91,23 @@ void quartz_window_event(short event_subtype, long event_value)
 }
 
 // window state event callbacks relaying the info to quartz_window_event
-struct quartz_rect quartz_window_event_maximize_toggle(
+struct quartz_rect quartz_window_event_maximize_on(
 	id window_delegate,
 	SEL cmd,
 	id* window,
 	struct quartz_rect rect)
 {
-	quartz_window_event(GLOBOX_QUARTZ_EVENT_WINDOW_STATE, GLOBOX_QUARTZ_WINDOW_EVENT_MAXIMIZE_TOGGLE);
+	quartz_window_event(GLOBOX_QUARTZ_EVENT_WINDOW_STATE, GLOBOX_QUARTZ_WINDOW_EVENT_MAXIMIZE_ON);
 
 	return rect;
+}
+
+void quartz_window_event_move(
+	id window_delegate,
+	SEL cmd,
+	id* notif)
+{
+	quartz_window_event(GLOBOX_QUARTZ_EVENT_WINDOW_STATE, GLOBOX_QUARTZ_WINDOW_EVENT_MAXIMIZE_OFF);
 }
 
 void quartz_window_event_minimize_on(
@@ -187,8 +195,14 @@ bool quartz_app_delegate_init_callback(
 	class_addMethod(
 		window_delegate_class,
 		sel_getUid("windowWillUseStandardFrame:defaultFrame:"),
-		(IMP) quartz_window_event_maximize_toggle,
+		(IMP) quartz_window_event_maximize_on,
 		"v@:^@:@");
+
+	class_addMethod(
+		window_delegate_class,
+		sel_getUid("windowWillMove:"),
+		(IMP) quartz_window_event_move,
+		"v@:^@");
 
 	class_addMethod(
 		window_delegate_class,

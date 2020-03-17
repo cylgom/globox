@@ -10,7 +10,8 @@ enum globox_quartz_app_event
 
 enum globox_quartz_window_event
 {
-	GLOBOX_QUARTZ_WINDOW_EVENT_MAXIMIZE_TOGGLE,
+	GLOBOX_QUARTZ_WINDOW_EVENT_MAXIMIZE_ON,
+	GLOBOX_QUARTZ_WINDOW_EVENT_MAXIMIZE_OFF,
 	GLOBOX_QUARTZ_WINDOW_EVENT_MINIMIZE_ON,
 	GLOBOX_QUARTZ_WINDOW_EVENT_MINIMIZE_OFF,
 	GLOBOX_QUARTZ_WINDOW_EVENT_FULLSCREEN_ON,
@@ -26,11 +27,16 @@ void quartz_window_event(
 	short event_subtype,
 	long event_value);
 
-struct quartz_rect quartz_window_event_maximize_toggle(
+struct quartz_rect quartz_window_event_maximize_on(
 	id window_delegate,
 	SEL cmd,
 	id* window,
 	struct quartz_rect rect);
+
+void quartz_window_event_move(
+	id window_delegate,
+	SEL cmd,
+	id* notif);
 
 void quartz_window_event_minimize_on(
 	id window_delegate,
