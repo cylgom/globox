@@ -6,6 +6,7 @@
 enum globox_quartz_app_event
 {
 	GLOBOX_QUARTZ_EVENT_WINDOW_STATE,
+	GLOBOX_QUARTZ_EVENT_WINDOW_CLOSE,
 };
 
 enum globox_quartz_window_event
@@ -54,6 +55,11 @@ void quartz_window_event_fullscreen_on(
 	id* notif);
 
 void quartz_window_event_fullscreen_off(
+	id window_delegate,
+	SEL cmd,
+	id* notif);
+
+void quartz_window_event_close(
 	id window_delegate,
 	SEL cmd,
 	id* notif);

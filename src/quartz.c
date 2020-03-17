@@ -97,7 +97,9 @@ struct quartz_rect quartz_window_event_maximize_on(
 	id* window,
 	struct quartz_rect rect)
 {
-	quartz_window_event(GLOBOX_QUARTZ_EVENT_WINDOW_STATE, GLOBOX_QUARTZ_WINDOW_EVENT_MAXIMIZE_ON);
+	quartz_window_event(
+		GLOBOX_QUARTZ_EVENT_WINDOW_STATE,
+		GLOBOX_QUARTZ_WINDOW_EVENT_MAXIMIZE_ON);
 
 	return rect;
 }
@@ -107,7 +109,9 @@ void quartz_window_event_move(
 	SEL cmd,
 	id* notif)
 {
-	quartz_window_event(GLOBOX_QUARTZ_EVENT_WINDOW_STATE, GLOBOX_QUARTZ_WINDOW_EVENT_MAXIMIZE_OFF);
+	quartz_window_event(
+		GLOBOX_QUARTZ_EVENT_WINDOW_STATE,
+		GLOBOX_QUARTZ_WINDOW_EVENT_MAXIMIZE_OFF);
 }
 
 void quartz_window_event_minimize_on(
@@ -115,7 +119,9 @@ void quartz_window_event_minimize_on(
 	SEL cmd,
 	id* notif)
 {
-	quartz_window_event(GLOBOX_QUARTZ_EVENT_WINDOW_STATE, GLOBOX_QUARTZ_WINDOW_EVENT_MINIMIZE_ON);
+	quartz_window_event(
+		GLOBOX_QUARTZ_EVENT_WINDOW_STATE,
+		GLOBOX_QUARTZ_WINDOW_EVENT_MINIMIZE_ON);
 }
 
 void quartz_window_event_minimize_off(
@@ -123,7 +129,9 @@ void quartz_window_event_minimize_off(
 	SEL cmd,
 	id* notif)
 {
-	quartz_window_event(GLOBOX_QUARTZ_EVENT_WINDOW_STATE, GLOBOX_QUARTZ_WINDOW_EVENT_MINIMIZE_OFF);
+	quartz_window_event(
+		GLOBOX_QUARTZ_EVENT_WINDOW_STATE,
+		GLOBOX_QUARTZ_WINDOW_EVENT_MINIMIZE_OFF);
 }
 
 void quartz_window_event_fullscreen_on(
@@ -131,7 +139,9 @@ void quartz_window_event_fullscreen_on(
 	SEL cmd,
 	id* notif)
 {
-	quartz_window_event(GLOBOX_QUARTZ_EVENT_WINDOW_STATE, GLOBOX_QUARTZ_WINDOW_EVENT_FULLSCREEN_ON);
+	quartz_window_event(
+		GLOBOX_QUARTZ_EVENT_WINDOW_STATE,
+		GLOBOX_QUARTZ_WINDOW_EVENT_FULLSCREEN_ON);
 }
 
 void quartz_window_event_fullscreen_off(
@@ -139,7 +149,17 @@ void quartz_window_event_fullscreen_off(
 	SEL cmd,
 	id* notif)
 {
-	quartz_window_event(GLOBOX_QUARTZ_EVENT_WINDOW_STATE, GLOBOX_QUARTZ_WINDOW_EVENT_FULLSCREEN_OFF);
+	quartz_window_event(
+		GLOBOX_QUARTZ_EVENT_WINDOW_STATE,
+		GLOBOX_QUARTZ_WINDOW_EVENT_FULLSCREEN_OFF);
+}
+
+void quartz_window_event_close(
+	id window_delegate,
+	SEL cmd,
+	id* notif)
+{
+	quartz_window_event(GLOBOX_QUARTZ_EVENT_WINDOW_CLOSE, 0);
 }
 
 // app delegate window creation callback
@@ -226,6 +246,12 @@ bool quartz_app_delegate_init_callback(
 		window_delegate_class,
 		sel_getUid("windowWillExitFullScreen:"),
 		(IMP) quartz_window_event_fullscreen_off,
+		"v@:^@");
+
+	class_addMethod(
+		window_delegate_class,
+		sel_getUid("windowWillClose:"),
+		(IMP) quartz_window_event_close,
 		"v@:^@");
 
 	id window_delegate = quartz_msg_id(

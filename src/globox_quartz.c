@@ -193,6 +193,10 @@ inline bool globox_handle_events(struct globox* globox)
 
 				printf("state: %u\n", globox->state);
 			}
+			else if (subtype == GLOBOX_QUARTZ_EVENT_WINDOW_CLOSE)
+			{
+				globox->closed = true;
+			}
 
 			printf("custom event received: %hd\n", subtype);
 		}
