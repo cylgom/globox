@@ -303,18 +303,6 @@ bool quartz_app_delegate_init_callback(
 		sel_getUid("stop:"),
 		NULL);
 
-	// set title
-	id string = quartz_msg_string(
-		(id) objc_getClass("NSString"),
-		sel_getUid("stringWithCString:encoding:"),
-		globox->title,
-		NSUTF8StringEncoding);
-
-	quartz_msg_obj(
-		app_delegate->window,
-		sel_getUid("setTitle:"),
-		string);
-
 	// save a reference to the window instance
 	globox->quartz_window_obj = app_delegate->window;
 

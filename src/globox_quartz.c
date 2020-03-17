@@ -29,10 +29,8 @@ inline bool globox_open(
 	globox->redraw = false; // TODO set to true
 	globox->frame_event = frame_event;
 	globox->closed = false;
-
 	globox->title = NULL;
-	globox_set_title(globox, title);
-	globox_set_state(globox, state);
+	globox->state = GLOBOX_STATE_REGULAR;
 
 // FUNC0
 	// create View class
@@ -93,6 +91,9 @@ inline bool globox_open(
 	globox->quartz_app_delegate_obj = quartz_msg_id(
 		globox->quartz_app_delegate_obj,
 		sel_getUid("init"));
+
+	// set title
+	globox_set_title(globox, title);
 // END
 
 // FUNC4
@@ -263,7 +264,16 @@ inline void globox_set_title(struct globox* globox, const char* title)
 
 	globox->title = strdup(title);
 
-	// TODO
+	id string = quartz_msg_string(
+		(id) objc_getClass("NSString"),
+		sel_getUid("stringWithCString:encoding:"),
+		globox->title,
+		NSUTF8StringEncoding);
+
+	quartz_msg_obj(
+		globox->quartz_window_obj,
+		sel_getUid("setTitle:"),
+		string);
 }
 
 inline void globox_set_state(struct globox* globox, enum globox_state state)
