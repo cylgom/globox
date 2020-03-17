@@ -55,7 +55,7 @@ void quartz_view_draw_rect_callback(
 }
 
 // window state event sender
-void quartz_window_event(enum globox_quartz_window_event quartz_window_event)
+void quartz_window_event(short event_subtype, long event_value)
 {
 	// create custom internal event
 	struct quartz_point point =
@@ -73,8 +73,8 @@ void quartz_window_event(enum globox_quartz_window_event quartz_window_event)
 		0,
 		0,
 		NULL,
-		quartz_window_event,
-		0,
+		event_subtype,
+		event_value,
 		0);
 
 	// get app singleton
@@ -97,7 +97,7 @@ struct quartz_rect quartz_window_event_maximize_toggle(
 	id* window,
 	struct quartz_rect rect)
 {
-	quartz_window_event(GLOBOX_QUARTZ_WINDOW_EVENT_MAXIMIZE_TOGGLE);
+	quartz_window_event(GLOBOX_QUARTZ_EVENT_WINDOW_STATE, GLOBOX_QUARTZ_WINDOW_EVENT_MAXIMIZE_TOGGLE);
 
 	return rect;
 }
@@ -107,7 +107,7 @@ void quartz_window_event_minimize_on(
 	SEL cmd,
 	id* notif)
 {
-	quartz_window_event(GLOBOX_QUARTZ_WINDOW_EVENT_MINIMIZE_ON);
+	quartz_window_event(GLOBOX_QUARTZ_EVENT_WINDOW_STATE, GLOBOX_QUARTZ_WINDOW_EVENT_MINIMIZE_ON);
 }
 
 void quartz_window_event_minimize_off(
@@ -115,7 +115,7 @@ void quartz_window_event_minimize_off(
 	SEL cmd,
 	id* notif)
 {
-	quartz_window_event(GLOBOX_QUARTZ_WINDOW_EVENT_MINIMIZE_OFF);
+	quartz_window_event(GLOBOX_QUARTZ_EVENT_WINDOW_STATE, GLOBOX_QUARTZ_WINDOW_EVENT_MINIMIZE_OFF);
 }
 
 void quartz_window_event_fullscreen_on(
@@ -123,7 +123,7 @@ void quartz_window_event_fullscreen_on(
 	SEL cmd,
 	id* notif)
 {
-	quartz_window_event(GLOBOX_QUARTZ_WINDOW_EVENT_FULLSCREEN_ON);
+	quartz_window_event(GLOBOX_QUARTZ_EVENT_WINDOW_STATE, GLOBOX_QUARTZ_WINDOW_EVENT_FULLSCREEN_ON);
 }
 
 void quartz_window_event_fullscreen_off(
@@ -131,7 +131,7 @@ void quartz_window_event_fullscreen_off(
 	SEL cmd,
 	id* notif)
 {
-	quartz_window_event(GLOBOX_QUARTZ_WINDOW_EVENT_FULLSCREEN_OFF);
+	quartz_window_event(GLOBOX_QUARTZ_EVENT_WINDOW_STATE, GLOBOX_QUARTZ_WINDOW_EVENT_FULLSCREEN_OFF);
 }
 
 // app delegate window creation callback

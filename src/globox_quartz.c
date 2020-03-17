@@ -120,6 +120,9 @@ inline bool globox_open(
 
 inline void globox_close(struct globox* globox)
 {
+	// TODO
+	// handle the case where the main loop and context were nor properly ended
+	// (I don't know how to do this yet, must do some research)
 	free(globox->title);
 }
 
@@ -145,10 +148,66 @@ inline bool globox_handle_events(struct globox* globox)
 			short subtype =
 				quartz_msg_type(event, sel_getUid("subtype"));
 
+			long data =
+				quartz_msg_type(event, sel_getUid("data1"));
+
+			// window state change accounting 
+			if (subtype == GLOBOX_QUARTZ_EVENT_WINDOW_STATE)
+			{
+				enum globox_state tmp_event = globox->state;
+
+				switch (data)
+				{
+					case GLOBOX_QUARTZ_WINDOW_EVENT_MAXIMIZE_TOGGLE:
+					{
+						if (globox->state == GLOBOX_STATE_MAXIMIZED)
+						{
+							globox->state = globox->quartz_state_old;
+						}
+						else
+						{
+							globox->state = GLOBOX_STATE_MAXIMIZED;
+						}
+
+						break;
+					}
+					case GLOBOX_QUARTZ_WINDOW_EVENT_MINIMIZE_ON:
+					{
+						globox->state = GLOBOX_STATE_MINIMIZED;
+
+						break;
+					}
+					case GLOBOX_QUARTZ_WINDOW_EVENT_MINIMIZE_OFF:
+					{
+						globox->state = globox->quartz_state_old;
+
+						break;
+					}
+					case GLOBOX_QUARTZ_WINDOW_EVENT_FULLSCREEN_ON:
+					{
+						globox->state = GLOBOX_STATE_FULLSCREEN;
+
+						break;
+					}
+					case GLOBOX_QUARTZ_WINDOW_EVENT_FULLSCREEN_OFF:
+					{
+						globox->state = globox->quartz_state_old;
+
+						break;
+					}
+				}
+
+				globox->quartz_state_old = tmp_event;
+
+				printf("state: %u\n", globox->state);
+			}
+
 			printf("custom event received: %hd\n", subtype);
 		}
 		else
 		{
+			// TODO proper event handling
+			// set close var on close
 			quartz_msg_send(
 				globox->fd.app,
 				sel_getUid("sendEvent:"),
@@ -209,6 +268,7 @@ inline void globox_set_state(struct globox* globox, enum globox_state state)
 {
 	switch (state)
 	{
+		// TODO
 		case GLOBOX_STATE_REGULAR:
 		{
 

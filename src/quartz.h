@@ -3,6 +3,11 @@
 
 #include "quartz_helpers.h"
 
+enum globox_quartz_app_event
+{
+	GLOBOX_QUARTZ_EVENT_WINDOW_STATE,
+};
+
 enum globox_quartz_window_event
 {
 	GLOBOX_QUARTZ_WINDOW_EVENT_MAXIMIZE_TOGGLE,
@@ -18,7 +23,8 @@ void quartz_view_draw_rect_callback(
 	struct quartz_rect rect);
 
 void quartz_window_event(
-	enum globox_quartz_window_event quartz_window_event);
+	short event_subtype,
+	long event_value);
 
 struct quartz_rect quartz_window_event_maximize_toggle(
 	id window_delegate,
