@@ -280,24 +280,87 @@ inline void globox_set_state(struct globox* globox, enum globox_state state)
 {
 	switch (state)
 	{
-		// TODO
 		case GLOBOX_STATE_REGULAR:
 		{
+			if (globox->state == GLOBOX_STATE_MINIMIZED)
+			{
+				quartz_msg_obj(
+					globox->quartz_window_obj,
+					sel_getUid("deminiaturize:"),
+					globox->quartz_app_delegate_obj);
+			}
+			else if (globox->state == GLOBOX_STATE_MAXIMIZED)
+			{
+				quartz_msg_obj(
+					globox->quartz_window_obj,
+					sel_getUid("zoom:"),
+					globox->quartz_app_delegate_obj);
+			}
+			else if (globox->state == GLOBOX_STATE_FULLSCREEN)
+			{
+				quartz_msg_obj(
+					globox->quartz_window_obj,
+					sel_getUid("toggleFullScreen:"),
+					globox->quartz_app_delegate_obj);
+			}
+
+			globox->state = GLOBOX_STATE_REGULAR;
 
 			break;
 		}
 		case GLOBOX_STATE_MAXIMIZED:
 		{
+			if (globox->state == GLOBOX_STATE_MINIMIZED)
+			{
+				quartz_msg_obj(
+					globox->quartz_window_obj,
+					sel_getUid("deminiaturize:"),
+					globox->quartz_app_delegate_obj);
+			}
+			else if (globox->state == GLOBOX_STATE_FULLSCREEN)
+			{
+				quartz_msg_obj(
+					globox->quartz_window_obj,
+					sel_getUid("toggleFullScreen:"),
+					globox->quartz_app_delegate_obj);
+			}
+
+			if (globox->state != GLOBOX_STATE_MAXIMIZED)
+			{
+				globox->state = GLOBOX_STATE_MAXIMIZED;
+
+				quartz_msg_obj(
+					globox->quartz_window_obj,
+					sel_getUid("zoom:"),
+					globox->quartz_app_delegate_obj);
+			}
 
 			break;
 		}
 		case GLOBOX_STATE_MINIMIZED:
 		{
+			if (globox->state != GLOBOX_STATE_MINIMIZED)
+			{
+				globox->state = GLOBOX_STATE_MINIMIZED;
 
+				quartz_msg_obj(
+					globox->quartz_window_obj,
+					sel_getUid("miniaturize:"),
+					globox->quartz_app_delegate_obj);
+			}
 			break;
 		}
 		case GLOBOX_STATE_FULLSCREEN:
 		{
+			if (globox->state != GLOBOX_STATE_FULLSCREEN)
+			{
+				globox->state = GLOBOX_STATE_FULLSCREEN;
+
+				quartz_msg_obj(
+					globox->quartz_window_obj,
+					sel_getUid("toggleFullScreen:"),
+					globox->quartz_app_delegate_obj);
+			}
 
 			break;
 		}
