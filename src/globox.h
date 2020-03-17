@@ -165,6 +165,7 @@ struct globox
 	Class quartz_app_delegate_class;
 	Class quartz_view_class;
 	id quartz_app_delegate_obj;
+	id quartz_window_obj;
 	id quartz_view_obj;
 	enum globox_state quartz_state_old;
 #endif

@@ -120,9 +120,17 @@ inline bool globox_open(
 
 inline void globox_close(struct globox* globox)
 {
-	// TODO
-	// handle the case where the main loop and context were nor properly ended
-	// (I don't know how to do this yet, must do some research)
+	// handle programmatically closing the application since
+	// it is also technically possible for other backends
+	if (!globox->closed)
+	{
+		globox->closed = true;
+
+		quartz_msg_void(
+			globox->quartz_window_obj,
+			sel_getUid("close"));
+	}
+
 	free(globox->title);
 }
 
@@ -202,8 +210,6 @@ inline bool globox_handle_events(struct globox* globox)
 		}
 		else
 		{
-			// TODO proper event handling
-			// set close var on close
 			quartz_msg_send(
 				globox->fd.app,
 				sel_getUid("sendEvent:"),

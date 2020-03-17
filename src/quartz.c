@@ -315,5 +315,8 @@ bool quartz_app_delegate_init_callback(
 		sel_getUid("setTitle:"),
 		string);
 
+	// save a reference to the window instance
+	globox->quartz_window_obj = app_delegate->window;
+
 	return true;
 }
