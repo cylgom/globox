@@ -22,52 +22,21 @@ void quartz_view_draw_rect_callback(
 
 	struct globox* globox = (struct globox*) out;
 
-	globox->width = rect.size.width;
-	globox->height = rect.size.height;
-	printf("%d\n", globox->width);
-	printf("%d\n", globox->height);
-
-	// regular stuff
-	id buf = quartz_msg_id(
-		(id) objc_getClass("NSColor"),
-		sel_getUid("redColor"));
-
-	struct quartz_rect rect_new =
-	{
-		.origin.x = 20,
-		.origin.y = 20,
-		.size.width = 60,
-		.size.height = 60,
-	};
-
-	quartz_msg_void(
-		buf,
-		sel_getUid("set"));
-
-	NSRectFill(rect_new);
-
 	// get that sweet memory address
 	id ns_ctx = quartz_msg_id(
 		(id) objc_getClass("NSGraphicsContext"),
 		sel_getUid("currentContext"));
 
-	printf("%p\n", (void*) ns_ctx);
-
 	id cg_ctx = quartz_msg_id(
 		ns_ctx,
 		sel_getUid("CGContext"));
 
-	printf("%p\n", (void*) cg_ctx);
-
+	// update globox info
+	globox->redraw = true;
+	globox->width = rect.size.width;
+	globox->height = rect.size.height;
 	// will fail if the context is not a bitmap
-	uint8_t* argb = CGBitmapContextGetData(cg_ctx);
-
-	printf("%p\n", (void*) argb);
-
-	for (int i = 0; i < 2000; ++i)
-	{
-		argb[i] = 0xFF;
-	}
+	globox->argb = (uint32_t*) CGBitmapContextGetData(cg_ctx);
 }
 
 // window state event sender
