@@ -8,10 +8,26 @@
 
 // callbacks
 void quartz_view_draw_rect_callback(
-	id app,
-	SEL cm,
+	id view,
+	SEL cmd,
 	struct quartz_rect rect)
 {
+	// retrieve globox context and update window size
+	void* out;
+
+	object_getInstanceVariable(
+		view,
+		"globox",
+		&out);
+
+	struct globox* globox = (struct globox*) out;
+
+	globox->width = rect.size.width;
+	globox->height = rect.size.height;
+	printf("%d\n", globox->width);
+	printf("%d\n", globox->height);
+
+	// regular stuff
 	id buf = quartz_msg_id(
 		(id) objc_getClass("NSColor"),
 		sel_getUid("redColor"));
@@ -273,10 +289,18 @@ bool quartz_app_delegate_init_callback(
 		.size.height = globox->height,
 	};
 
+	// instantiate view object
 	globox->quartz_view_obj = quartz_msg_id(
 		(id) globox->quartz_view_class,
 		sel_getUid("alloc"));
 
+	// set instance's globox context pointer
+	object_setInstanceVariable(
+		globox->quartz_view_obj,
+		"globox",
+		globox);
+
+	// initialize view frame
 	globox->quartz_view_obj = quartz_msg_rect(
 		globox->quartz_view_obj,
 		sel_getUid("initWithFrame:"),

@@ -38,7 +38,15 @@ inline bool globox_open(
 		(Class) objc_getClass("NSView"),
 		"View",
 		0);
-	
+
+	// inject globox context pointer
+	class_addIvar(
+		globox->quartz_view_class,
+		"globox",
+		sizeof (void*),
+		sizeof (void*),
+		"^v");
+
 	class_addMethod(
 		globox->quartz_view_class,
 		sel_getUid("drawRect:"),

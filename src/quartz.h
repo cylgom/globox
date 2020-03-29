@@ -20,8 +20,8 @@ enum globox_quartz_window_event
 };
 
 void quartz_view_draw_rect_callback(
-	id app,
-	SEL cm,
+	id view,
+	SEL cmd,
 	struct quartz_rect rect);
 
 void quartz_window_event(
