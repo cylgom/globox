@@ -26,6 +26,7 @@ inline bool globox_open(
 	globox->height = height;
 	globox->buf_width = width;
 	globox->buf_height = height;
+	globox->padding = 0;
 	globox->redraw = true;
 	globox->frame_event = frame_event;
 	globox->closed = false;

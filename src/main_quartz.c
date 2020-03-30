@@ -24,7 +24,7 @@ static inline void handler(int sig)
 		// background
 		for (uint32_t i = 0; i < ctx.height * ctx.width; ++i)
 		{
-			ctx.argb[i] = 0x00888888;
+			ctx.argb[i + (i/ctx.width) * ctx.padding] = 0x00888888;
 		}
 
 		// square
@@ -35,7 +35,7 @@ static inline void handler(int sig)
 			pos = ((ctx.height / 2) - 50 + (i / 100)) * ctx.width
 				+ (ctx.width / 2) - 50 + (i % 100);
 
-			ctx.argb[pos] = 0x00FFFFFF;
+			ctx.argb[pos + (pos/ctx.width) * ctx.padding] = 0x00FFFFFF;
 		}
 
 		globox_copy(&ctx, 0, 0, ctx.width, ctx.height);

@@ -31,12 +31,12 @@ void quartz_view_draw_rect_callback(
 		ns_ctx,
 		sel_getUid("CGContext"));
 
-	// update globox info
-	globox->redraw = true;
-	globox->width = rect.size.width;
-	globox->height = rect.size.height;
 	// will fail if the context is not a bitmap
+	globox->redraw = true;
 	globox->argb = (uint32_t*) CGBitmapContextGetData(cg_ctx);
+	globox->width = CGBitmapContextGetWidth(cg_ctx);
+	globox->height = CGBitmapContextGetHeight(cg_ctx);
+	globox->padding = CGBitmapContextGetBytesPerRow(cg_ctx) / 4 - globox->width;
 }
 
 // window state event sender

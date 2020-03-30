@@ -62,6 +62,7 @@ struct globox
 	// window size
 	uint32_t width;
 	uint32_t height;
+	uint32_t padding;
 	// image buffer *maximum* size
 	uint32_t buf_width;
 	uint32_t buf_height;

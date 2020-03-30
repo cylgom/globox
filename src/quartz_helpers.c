@@ -45,6 +45,11 @@ id*(*quartz_msg_poll)(id, SEL, unsigned long long, id*, id*, bool) =
 
 // fetch accessible symbols
 extern void* CGBitmapContextGetData(id);
+extern size_t CGBitmapContextGetWidth(id);
+extern size_t CGBitmapContextGetHeight(id);
+extern size_t CGBitmapContextGetBytesPerRow(id);
+extern size_t CGBitmapContextGetBitsPerComponent(id);
+extern size_t CGBitmapContextGetBitsPerPixel(id);
 extern void NSRectFill(struct quartz_rect rect);
 extern SEL NSSelectorFromString(const char*);
 extern id* NSDefaultRunLoopMode;
