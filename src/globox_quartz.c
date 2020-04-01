@@ -26,12 +26,19 @@ inline bool globox_open(
 	globox->height = height;
 	globox->buf_width = width;
 	globox->buf_height = height;
-	globox->padding = 0;
 	globox->redraw = true;
 	globox->frame_event = frame_event;
 	globox->closed = false;
 	globox->title = NULL;
 	globox->state = GLOBOX_STATE_REGULAR;
+
+	// buffer allocation, right here, right now
+	globox->argb = (uint32_t*) malloc(4 * width * height);
+
+	if (globox->argb == NULL)
+	{
+		return false;
+	}
 
 // FUNC0
 	// create View class
@@ -234,6 +241,9 @@ inline bool globox_handle_events(struct globox* globox)
 
 inline bool globox_shrink(struct globox* globox)
 {
+	globox->buf_width = globox->width;
+	globox->buf_height = globox->height;
+	globox->argb = realloc(globox->argb, 4 * globox->width * globox->height);
 
 	return true;
 }
@@ -245,12 +255,20 @@ inline void globox_copy(
 	uint32_t width,
 	uint32_t height)
 {
+	globox->quartz_commit_x = x;
+	globox->quartz_commit_y = y;
+	globox->quartz_commit_width = width;
+	globox->quartz_commit_height = height;
 	globox->redraw = false;
+
+	globox_commit(globox);
 }
 
 inline void globox_commit(struct globox* globox)
 {
-
+	quartz_msg_void(
+		globox->quartz_view_obj,
+		sel_getUid("setNeedsDisplay:"));
 }
 
 inline void globox_prepoll(struct globox* globox)

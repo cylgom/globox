@@ -32,11 +32,51 @@ void quartz_view_draw_rect_callback(
 		sel_getUid("CGContext"));
 
 	// will fail if the context is not a bitmap
-	globox->redraw = true;
-	globox->argb = (uint32_t*) CGBitmapContextGetData(cg_ctx);
-	globox->width = CGBitmapContextGetWidth(cg_ctx);
-	globox->height = CGBitmapContextGetHeight(cg_ctx);
-	globox->padding = CGBitmapContextGetBytesPerRow(cg_ctx) / 4 - globox->width;
+	// (no, we can't just use this pointer outside of drawRect)
+	uint8_t* buf_out = (uint8_t*) CGBitmapContextGetData(cg_ctx);
+	uint32_t width = CGBitmapContextGetWidth(cg_ctx);
+	uint32_t height = CGBitmapContextGetHeight(cg_ctx);
+	uint32_t width_bytes_padded = CGBitmapContextGetBytesPerRow(cg_ctx);
+
+	// TODO better error
+	if (globox->argb == NULL)
+	{
+		globox_close(globox);
+
+		return;
+	}
+
+	if ((globox->buf_width * globox->buf_height) < (width * height))
+	{
+		// realloc the buffer if needed
+		free(globox->argb);
+		globox->argb = (uint32_t*) malloc(4 * width * height);
+		globox->buf_width = width;
+		globox->buf_height = height;
+		globox->width = width;
+		globox->height = height;
+		globox->redraw = true;
+	}
+	else if ((globox->width == width) && (globox->height == height))
+	{
+		// copy the buffer if the width matches
+		uint32_t width_bytes = width * 4;
+
+		for (uint32_t i = 0; i < height; ++i)
+		{
+			memcpy(
+				buf_out + (i * width_bytes_padded),
+				((uint8_t*) globox->argb) + (i * width_bytes),
+				width_bytes);
+		}
+	}
+	else
+	{
+		// update the sizes and wait for the next cycle
+		globox->width = width;
+		globox->height = height;
+		globox->redraw = true;
+	}
 }
 
 // window state event sender

@@ -62,7 +62,6 @@ struct globox
 	// window size
 	uint32_t width;
 	uint32_t height;
-	uint32_t padding;
 	// image buffer *maximum* size
 	uint32_t buf_width;
 	uint32_t buf_height;
@@ -165,9 +164,16 @@ struct globox
 #ifdef GLOBOX_QUARTZ
 	Class quartz_app_delegate_class;
 	Class quartz_view_class;
+
 	id quartz_app_delegate_obj;
 	id quartz_window_obj;
 	id quartz_view_obj;
+
+	uint32_t quartz_commit_x;
+	uint32_t quartz_commit_y;
+	uint32_t quartz_commit_width;
+	uint32_t quartz_commit_height;
+
 	enum globox_state quartz_state_old;
 #endif
 };
