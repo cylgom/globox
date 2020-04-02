@@ -113,4 +113,4 @@ works properly.
 
 ## Greetings
 My teacher [Mr. Biri](https://github.com/venceslas) for approving this project.
-Andrew Hulshult, whose music I massively listened to while coding this heresy
+Andrew Hulshult, whose music I massively listened to while coding this heresy.
