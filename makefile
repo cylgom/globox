@@ -19,13 +19,13 @@ SRCS_OBJS = $(OBJD)/$(RESD)/icon/iconpix.o
 LINK =
 
 RENDER ?= swr
-BACKEND ?= quartz
+BACKEND ?= x11
 
 # rendering backends
 ## software
 ifeq ($(RENDER), swr)
 FLAGS+= -DGLOBOX_RENDER_SWR
-SRCS = $(SRCD)/main_quartz.c
+SRCS = $(SRCD)/main.c
 endif
 
 ## vulkan
@@ -40,7 +40,7 @@ endif
 ifeq ($(RENDER), ogl)
 FLAGS+= -DGLOBOX_RENDER_OGL
 LINK+= -lX11 -lX11-xcb -lGL
-SRCS = $(SRCD)/main_callback.c
+SRCS = $(SRCD)/main_opengl.c
 endif
 
 # windowing backends
