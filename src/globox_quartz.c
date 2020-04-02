@@ -166,8 +166,6 @@ inline bool globox_handle_events(struct globox* globox)
 		unsigned long type =
 			quartz_msg_type(event, sel_getUid("type"));
 
-		printf("event type: %lu\n", type);
-
 		if (type == NSEventTypeApplicationDefined)
 		{
 			short subtype =
@@ -215,15 +213,11 @@ inline bool globox_handle_events(struct globox* globox)
 				}
 
 				globox->quartz_state_old = tmp_event;
-
-				printf("state: %u\n", globox->state);
 			}
 			else if (subtype == GLOBOX_QUARTZ_EVENT_WINDOW_CLOSE)
 			{
 				globox->closed = true;
 			}
-
-			printf("custom event received: %hd\n", subtype);
 		}
 		else
 		{
@@ -231,8 +225,6 @@ inline bool globox_handle_events(struct globox* globox)
 				globox->fd.app,
 				sel_getUid("sendEvent:"),
 				event);
-
-			printf("event sent\n");
 		}
 	}
 
