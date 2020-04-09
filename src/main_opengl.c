@@ -1,56 +1,20 @@
-#define _XOPEN_SOURCE 700
-
 #include "globox.h"
-#include <unistd.h>
-#include <signal.h>
-#include <time.h>
-#include <string.h>
-#include <stdio.h>
-#include <sys/epoll.h>
-
-#ifdef GLOBOX_RENDER_OGL
 #include <GL/gl.h>
-#endif
-
-#define MAX_EVENTS 1000
 
 extern unsigned char iconpix_beg;
 extern unsigned char iconpix_end;
 extern unsigned char iconpix_len;
 
-// global context because I'm lazy
 struct globox ctx = {0};
 
-// update window on SIGALRM
-static inline void handler(int sig)
+void handler()
 {
 	globox_handle_events(&ctx);
 
 	if (ctx.redraw)
 	{
-#ifdef GLOBOX_RENDER_SWR
-		// background
-		for (uint32_t i = 0; i < ctx.height * ctx.width; ++i)
-		{
-			ctx.argb[i] = 0x00888888;
-		}
-
-		// square
-		uint32_t pos;
-
-		for (uint32_t i = 0; i < (100*100); ++i)
-		{
-			pos = ((ctx.height / 2) - 50 + (i / 100)) * ctx.width
-				+ (ctx.width / 2) - 50 + (i % 100);
-
-			ctx.argb[pos] = 0x00FFFFFF;
-		}
-#endif
-
-#ifdef GLOBOX_RENDER_OGL
-		glClearColor(0.2, 0.4, 0.9, 1.0);
+		glClearColor(0.2f, 0.4f, 0.9f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
-#endif
 
 		globox_copy(&ctx, 0, 0, ctx.width, ctx.height);
 	}
@@ -79,42 +43,19 @@ int main()
 			2 + (16 * 16) + 2 + (32 * 32) + 2 + (64 * 64));
 		globox_commit(&ctx);
 
-		// event polling initialization
-		int fd = epoll_create(2);
-
-		struct epoll_event ev =
-		{
-			EPOLLIN,
-			{0},
-		};
-
-		// main events
-		epoll_ctl(
-			fd,
-			EPOLL_CTL_ADD,
-			ctx.fd.descriptor,
-			&ev);
-
-		// frame callback timer event
-		epoll_ctl(
-			fd,
-			EPOLL_CTL_ADD,
-			ctx.fd_frame,
-			&ev);
-
-		// loop
-		struct epoll_event list[MAX_EVENTS];
-
-		while (1)
+		while (!ctx.closed)
 		{
 			globox_prepoll(&ctx);
-			epoll_wait(fd, list, MAX_EVENTS, -1);
-			handler(0);
 
-			if (ctx.closed)
+			// internal event dispatching by globox
+			// `globox_poll_events` is an alternative
+			if (!globox_wait_events(&ctx))
 			{
+				ctx.closed = true;
 				break;
 			}
+
+			handler();
 		}
 
 		globox_close(&ctx);
