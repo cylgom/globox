@@ -1,16 +1,5 @@
 #define _XOPEN_SOURCE 700
-
-// Separate file for rendering functions because: Vulkan.
-// Validation layers are hard-coded so I can debug issues.
-
 #include "globox.h"
-#include <unistd.h>
-#include <signal.h>
-#include <time.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/epoll.h>
 
 #ifdef GLOBOX_X11
 	#define VK_USE_PLATFORM_XCB_KHR 1
@@ -18,14 +7,13 @@
 #endif
 
 #include <vulkan/vulkan.h>
-
-#define MAX_EVENTS 1000
+#include <stdio.h>
+#include <stdlib.h>
 
 extern unsigned char iconpix_beg;
 extern unsigned char iconpix_end;
 extern unsigned char iconpix_len;
 
-// global context because I'm lazy
 struct globox ctx = {0};
 
 // vulkan devices info
@@ -87,7 +75,7 @@ const char* layers[] =
 };
 
 // print available vulkan extensions
-static inline uint8_t vlk_print_ext()
+uint8_t vlk_print_ext()
 {
 	VkExtensionProperties* vlk_ext;
 	uint32_t vlk_ext_count;
@@ -104,7 +92,10 @@ static inline uint8_t vlk_print_ext()
 	}
 
 	vlk_ext = malloc(vlk_ext_count * (sizeof (VkExtensionProperties)));
-	vlk_ok = vkEnumerateInstanceExtensionProperties(NULL, &vlk_ext_count, vlk_ext);
+	vlk_ok = vkEnumerateInstanceExtensionProperties(
+		NULL,
+		&vlk_ext_count,
+		vlk_ext);
 
 	if (vlk_ok != VK_SUCCESS)
 	{
@@ -128,7 +119,7 @@ static inline uint8_t vlk_print_ext()
 }
 
 // fill optional vulkan structures
-static inline void vlk_prepare(struct globox* globox)
+void vlk_prepare(struct globox* globox)
 {
 	vlk_app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	vlk_app_info.pNext = NULL;
@@ -160,7 +151,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vlk_debug_callback(
 }
 
 // validation layers
-static inline uint8_t vlk_validation_init(struct globox* globox)
+uint8_t vlk_validation_init(struct globox* globox)
 {
 	PFN_vkCreateDebugReportCallbackEXT callback_creator =
 		(PFN_vkCreateDebugReportCallbackEXT)
@@ -193,7 +184,7 @@ static inline uint8_t vlk_validation_init(struct globox* globox)
 	return 0;
 }
 
-static inline uint8_t vlk_list_physical(struct globox* globox)
+uint8_t vlk_list_physical(struct globox* globox)
 {
 	count_dev = 0;
 
@@ -386,7 +377,7 @@ static inline uint8_t vlk_list_physical(struct globox* globox)
 	return 0;
 }
 
-static inline uint8_t vlk_select_physical(struct globox* globox)
+uint8_t vlk_select_physical(struct globox* globox)
 {
 	uint32_t i = 0;
 	uint32_t k = 0;
@@ -442,14 +433,14 @@ static inline uint8_t vlk_select_physical(struct globox* globox)
 	return 1;
 }
 
-static inline void vlk_free_physical()
+void vlk_free_physical()
 {
 	free(vlk_dev_list);
 	free(vlk_surf_caps_list);
 	free(vlk_dev_info_list);
 }
 
-static inline uint8_t vlk_create_logical(struct globox* globox)
+uint8_t vlk_create_logical(struct globox* globox)
 {
 	float priorities = 1.0f;
 
@@ -491,8 +482,7 @@ static inline uint8_t vlk_create_logical(struct globox* globox)
 	return 0;
 }
 
-// update window on SIGALRM
-static inline void handler(int sig)
+void handler()
 {
 	globox_handle_events(&ctx);
 
@@ -560,7 +550,7 @@ static inline void handler(int sig)
 	}
 }
 
-static inline uint8_t vlk_swapchain(struct globox* globox)
+uint8_t vlk_swapchain(struct globox* globox)
 {
 	uint32_t count_image = 2;
 	VkSurfaceCapabilitiesKHR surf_caps = vlk_surf_caps_list[vlk_selected_dev];
@@ -578,10 +568,18 @@ static inline uint8_t vlk_swapchain(struct globox* globox)
 		.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
 		.surface = globox->vlk_surface,
 		.minImageCount = count_image,
-		.imageFormat = vlk_dev_info_list[vlk_selected_dev].surf_format_list[0].format,
-		.imageColorSpace = vlk_dev_info_list[vlk_selected_dev].surf_format_list[0].colorSpace,
+		.imageFormat =
+			vlk_dev_info_list[vlk_selected_dev]
+				.surf_format_list[0]
+				.format,
+		.imageColorSpace =
+			vlk_dev_info_list[vlk_selected_dev]
+				.surf_format_list[0]
+				.colorSpace,
 		.imageExtent = vlk_surf_caps_list[vlk_selected_dev].currentExtent,
-		.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+		.imageUsage =
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+			| VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 		.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
 		.imageArrayLayers = 1,
 		.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
@@ -603,7 +601,11 @@ static inline uint8_t vlk_swapchain(struct globox* globox)
 
 	count_chain = 0;
 
-	ok = vkGetSwapchainImagesKHR(vlk_dev_logical, vlk_chain, &count_chain, NULL);
+	ok = vkGetSwapchainImagesKHR(
+		vlk_dev_logical,
+		vlk_chain,
+		&count_chain,
+		NULL);
 
 	if (ok != VK_SUCCESS)
 	{
@@ -613,7 +615,11 @@ static inline uint8_t vlk_swapchain(struct globox* globox)
 	vlk_image_list = malloc(count_chain * (sizeof (VkImage)));
 	vlk_cmd_list = malloc(count_chain * (sizeof (VkCommandBuffer)));
 
-	ok = vkGetSwapchainImagesKHR(vlk_dev_logical, vlk_chain, &count_chain, vlk_image_list);
+	ok = vkGetSwapchainImagesKHR(
+		vlk_dev_logical,
+		vlk_chain,
+		&count_chain,
+		vlk_image_list);
 
 	if (ok != VK_SUCCESS)
 	{
@@ -623,7 +629,7 @@ static inline uint8_t vlk_swapchain(struct globox* globox)
 	return 0;
 }
 
-static inline uint8_t vlk_cmd_get()
+uint8_t vlk_cmd_get()
 {
 	VkCommandPoolCreateInfo cmd =
 	{
@@ -631,7 +637,11 @@ static inline uint8_t vlk_cmd_get()
 		.queueFamilyIndex = vlk_selected_family,
 	};
 
-	VkResult ok = vkCreateCommandPool(vlk_dev_logical, &cmd, NULL, &vlk_cmd_pool);
+	VkResult ok = vkCreateCommandPool(
+		vlk_dev_logical,
+		&cmd,
+		NULL,
+		&vlk_cmd_pool);
 
 	if (ok != VK_SUCCESS)
 	{
@@ -659,7 +669,7 @@ static inline uint8_t vlk_cmd_get()
 	return 0;
 }
 
-static inline uint8_t vlk_cmd_rec()
+uint8_t vlk_cmd_rec()
 {
 	VkCommandBufferBeginInfo info =
 	{
@@ -708,7 +718,7 @@ static inline uint8_t vlk_cmd_rec()
 	return 0;
 }
 
-static inline uint32_t vlk_semaphores()
+uint32_t vlk_semaphores()
 {
 	VkResult ok;
 
@@ -815,7 +825,6 @@ int main()
 	globox_vlk(&ctx);
 #endif
 
-	// basic window config
 	globox_set_title(&ctx, "HELO");
 	globox_set_icon(
 		&ctx,
@@ -823,42 +832,19 @@ int main()
 		2 + (16 * 16) + 2 + (32 * 32) + 2 + (64 * 64));
 	globox_commit(&ctx);
 
-	// event polling initialization
-	int fd = epoll_create(2);
-
-	struct epoll_event ev =
-	{
-		EPOLLIN,
-		{0},
-	};
-
-	// main events
-	epoll_ctl(
-		fd,
-		EPOLL_CTL_ADD,
-		ctx.fd.descriptor,
-		&ev);
-
-	// frame callback timer event
-	epoll_ctl(
-		fd,
-		EPOLL_CTL_ADD,
-		ctx.fd_frame,
-		&ev);
-
-	// loop
-	struct epoll_event list[MAX_EVENTS];
-
-	while (1)
+	while (!ctx.closed)
 	{
 		globox_prepoll(&ctx);
-		epoll_wait(fd, list, MAX_EVENTS, -1);
-		handler(0);
 
-		if (ctx.closed)
+		// internal event dispatching by globox
+		// `globox_poll_events` is an alternative
+		if (!globox_wait_events(&ctx))
 		{
+			ctx.closed = true;
 			break;
 		}
+
+		handler();
 	}
 
 	free(vlk_image_list);
