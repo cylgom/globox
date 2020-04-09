@@ -44,7 +44,7 @@ int main()
 		0,
 		100,
 		100,
-		false);
+		false); // true for frame event
 
 	if (ok)
 	{

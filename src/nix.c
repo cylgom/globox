@@ -5,17 +5,42 @@
 
 void globox_epoll_init(struct globox* globox)
 {
-	globox->epoll_fd = epoll_create(1);
-
-	struct epoll_event ev =
+	if (globox->frame_event)
 	{
-		EPOLLIN | EPOLLET,
-		{0},
-	};
+		globox->epoll_fd = epoll_create(2);
 
-	epoll_ctl(
-		globox->epoll_fd,
-		EPOLL_CTL_ADD,
-		globox->fd.descriptor,
-		&ev);
+		struct epoll_event ev =
+		{
+			EPOLLIN,
+			{0},
+		};
+
+		epoll_ctl(
+			globox->epoll_fd,
+			EPOLL_CTL_ADD,
+			globox->fd.descriptor,
+			&ev);
+
+		epoll_ctl(
+			globox->epoll_fd,
+			EPOLL_CTL_ADD,
+			globox->fd_frame,
+			&ev);
+	}
+	else
+	{
+		globox->epoll_fd = epoll_create(1);
+
+		struct epoll_event ev =
+		{
+			EPOLLIN | EPOLLET,
+			{0},
+		};
+
+		epoll_ctl(
+			globox->epoll_fd,
+			EPOLL_CTL_ADD,
+			globox->fd.descriptor,
+			&ev);
+	}
 }
