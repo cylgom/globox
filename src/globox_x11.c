@@ -9,6 +9,7 @@
 #include <sys/ipc.h>
 #include <sys/timerfd.h>
 #include "x11.h"
+#include "nix.h"
 
 #ifdef GLOBOX_RENDER_SWR
 #include <sys/shm.h>
@@ -173,6 +174,8 @@ inline bool globox_open(
 	{
 		return false;
 	}
+
+	globox_epoll_init(globox);
 
 	return true;
 }
@@ -506,7 +509,24 @@ inline void globox_commit(struct globox* globox)
 
 inline void globox_prepoll(struct globox* globox)
 {
-	// not used ATM
+	// not needed
+}
+
+bool globox_wait_events(struct globox* globox)
+{
+	epoll_wait(
+		globox->epoll_fd,
+		globox->epoll_list,
+		GLOBOX_MAX_EVENTS,
+		-1);
+
+	return true;
+}
+
+bool globox_poll_events(struct globox* globox)
+{
+	// not needed
+	return true;
 }
 
 // direct icon change

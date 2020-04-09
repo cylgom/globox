@@ -265,7 +265,30 @@ inline void globox_commit(struct globox* globox)
 
 inline void globox_prepoll(struct globox* globox)
 {
-	// not used ATM
+	// not needed
+}
+
+bool globox_wait_events(struct globox* globox)
+{
+	id* future = quartz_msg_date(
+		(id) objc_getClass("NSDate"),
+		sel_getUid("distantFuture"));
+
+	quartz_msg_poll(
+		globox->fd.app,
+		sel_getUid("nextEventMatchingMask:untilDate:inMode:dequeue:"),
+		NSEventMaskAny,
+		future,
+		NSDefaultRunLoopMode,
+		false);
+
+	return true;
+}
+
+bool globox_poll_events(struct globox* globox)
+{
+	// not needed
+	return true;
 }
 
 inline void globox_set_icon(struct globox* globox, uint32_t* pixmap, uint32_t len)

@@ -1,13 +1,4 @@
-#define _XOPEN_SOURCE 700
-
 #include "globox.h"
-
-#if defined(GLOBOX_X11) || defined(GLOBOX_WAYLAND)
-	#include <sys/epoll.h>
-	#define MAX_EVENTS 1000
-#elif defined(GLOBOX_QUARTZ)
-	#include "quartz_helpers.h"
-#endif
 
 extern unsigned char iconpix_beg;
 extern unsigned char iconpix_end;
@@ -65,51 +56,17 @@ int main()
 			2 + (16 * 16) + 2 + (32 * 32) + 2 + (64 * 64));
 		globox_commit(&ctx);
 
-		// initializes epoll for x11 event handling
-#if defined(GLOBOX_X11) || defined(GLOBOX_WAYLAND)
-		int fd = epoll_create(1);
-
-		struct epoll_event ev =
-		{
-			EPOLLIN | EPOLLET,
-			{0},
-		};
-
-		epoll_ctl(
-			fd,
-			EPOLL_CTL_ADD,
-			ctx.fd.descriptor,
-			&ev);
-
-		struct epoll_event list[MAX_EVENTS];
-#endif
-
 		while (!ctx.closed)
 		{
 			globox_prepoll(&ctx);
 
-			// directly handles the display system's events
-#if defined(GLOBOX_X11) || defined(GLOBOX_WAYLAND)
-			epoll_wait(fd, list, MAX_EVENTS, -1);
-#elif defined(GLOBOX_WIN)
-			if (!GetMessage(&ctx.win_msg, ctx.fd.handle, 0, 0))
+			// internal event dispatching by globox
+			// `globox_poll_events` is an alternative
+			if (!globox_wait_events(&ctx))
 			{
 				ctx.closed = true;
 				break;
 			}
-#elif defined(GLOBOX_QUARTZ)
-			id* future = quartz_msg_date(
-				(id) objc_getClass("NSDate"),
-				sel_getUid("distantFuture"));
-
-			quartz_msg_poll(
-				ctx.fd.app,
-				sel_getUid("nextEventMatchingMask:untilDate:inMode:dequeue:"),
-				NSEventMaskAny,
-				future,
-				NSDefaultRunLoopMode,
-				false);
-#endif
 
 			handler();
 		}

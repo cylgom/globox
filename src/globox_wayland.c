@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include "xdg-shell-client-protocol.h"
 #include "wayland.h"
+#include "nix.h"
 
 inline bool globox_open(
 	struct globox* globox,
@@ -82,6 +83,8 @@ inline bool globox_open(
 	{
 		globox->fd_frame = eventfd(0, 0);
 	}
+
+	globox_epoll_init(globox);
 
 	return err;
 }
@@ -156,6 +159,23 @@ inline void globox_prepoll(
 	struct globox* globox)
 {
 	wl_display_dispatch(globox->wl_display);
+}
+
+bool globox_wait_events(struct globox* globox)
+{
+	epoll_wait(
+		globox->epoll_fd,
+		globox->epoll_list,
+		GLOBOX_MAX_EVENTS,
+		-1);
+
+	return true;
+}
+
+bool globox_poll_events(struct globox* globox)
+{
+	// not needed
+	return true;
 }
 
 inline void globox_set_icon(struct globox* globox, uint32_t* pixmap, uint32_t len)

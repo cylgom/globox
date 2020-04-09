@@ -29,6 +29,11 @@
 #include "xdg-shell-client-protocol.h"
 #endif
 
+#if defined(GLOBOX_X11) || defined(GLOBOX_WAYLAND)
+#include <sys/epoll.h>
+#define GLOBOX_MAX_EVENTS 1000
+#endif
+
 #ifdef GLOBOX_WIN
 #include <windows.h>
 #endif
@@ -76,6 +81,12 @@ struct globox
 	bool frame_event;
 	bool closed;
 	int fd_frame;
+
+	// nix
+#if defined(GLOBOX_X11) || defined(GLOBOX_WAYLAND)
+	int epoll_fd;
+	struct epoll_event epoll_list[GLOBOX_MAX_EVENTS];
+#endif
 
 #ifdef GLOBOX_X11
 	xcb_connection_t* x11_conn;
@@ -209,6 +220,12 @@ void globox_commit(
 	struct globox* globox);
 
 void globox_prepoll(
+	struct globox* globox);
+
+bool globox_wait_events(
+	struct globox* globox);
+
+bool globox_poll_events(
 	struct globox* globox);
 
 // setters

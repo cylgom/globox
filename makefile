@@ -47,6 +47,7 @@ endif
 ## x11
 ifeq ($(BACKEND), x11)
 FLAGS+= -DGLOBOX_X11
+SRCS+= $(SRCD)/nix.c
 SRCS+= $(SRCD)/x11.c
 SRCS+= $(SRCD)/globox_x11.c
 LINK+= -lxcb -lxcb-shm -lxcb-randr -lrt
@@ -57,6 +58,7 @@ endif
 ## wayland
 ifeq ($(BACKEND), wayland)
 FLAGS+= -DGLOBOX_WAYLAND
+SRCS+= $(SRCD)/nix.c
 SRCS+= $(SRCD)/wayland.c
 SRCS+= $(SRCD)/globox_wayland.c
 SRCS+= $(INCD)/xdg-shell-protocol.c
@@ -69,7 +71,6 @@ endif
 ifeq ($(BACKEND), win)
 CC = x86_64-w64-mingw32-gcc
 FLAGS+= -DGLOBOX_WIN -DUNICODE -D_UNICODE
-SRCS = $(SRCD)/main_win_getmessage.c
 SRCS+= $(SRCD)/win.c
 SRCS+= $(SRCD)/globox_win.c
 LINK+= -lgdi32 -mwindows

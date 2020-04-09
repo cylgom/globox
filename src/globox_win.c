@@ -351,7 +351,18 @@ inline void globox_commit(struct globox* globox)
 
 inline void globox_prepoll(struct globox* globox)
 {
-	// not used ATM
+	// not needed
+}
+
+bool globox_wait_events(struct globox* globox)
+{
+	return GetMessage(&globox->win_msg, globox->fd.handle, 0, 0);
+}
+
+bool globox_poll_events(struct globox* globox)
+{
+	PeekMessage(&globox->win_msg, globox->fd.handle, 0, 0, 1);
+	return true;
 }
 
 // automagically converts X11 pixmaps to Windows icons :)
