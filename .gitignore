@@ -1,4 +1,5 @@
 bin
 obj
 inc
+.gitmodules
 valgrind.log

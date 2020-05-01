@@ -1,0 +1,3 @@
+[submodule "sub/willis"]
+	path = sub/willis
+	url = https://git.cylgom.net/cylgom/willis.git

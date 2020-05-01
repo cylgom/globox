@@ -18,18 +18,18 @@ SRCS =
 SRCS_OBJS = $(OBJD)/$(RESD)/icon/iconpix.o
 LINK =
 
-RENDER ?= swr
+EXAMPLE ?= x11
 BACKEND ?= x11
 
 # rendering backends
 ## software
-ifeq ($(RENDER), swr)
+ifeq ($(EXAMPLE), swr)
 FLAGS+= -DGLOBOX_RENDER_SWR
 SRCS = $(SRCD)/main.c
 endif
 
 ## vulkan
-ifeq ($(RENDER), vlk)
+ifeq ($(EXAMPLE), vlk)
 FLAGS+= -DGLOBOX_RENDER_VLK
 LINK+= -lvulkan
 LINK+= -lVkLayer_khronos_validation
@@ -37,10 +37,16 @@ SRCS = $(SRCD)/main_vulkan.c
 endif
 
 ## opengl
-ifeq ($(RENDER), ogl)
+ifeq ($(EXAMPLE), ogl)
 FLAGS+= -DGLOBOX_RENDER_OGL
 LINK+= -lX11 -lX11-xcb -lGL
 SRCS = $(SRCD)/main_opengl.c
+endif
+
+## willis
+ifeq ($(EXAMPLE), willis)
+FLAGS+= -DGLOBOX_RENDER_SWR
+SRCS = $(SRCD)/main_willis.c
 endif
 
 # windowing backends
@@ -53,6 +59,11 @@ SRCS+= $(SRCD)/globox_x11.c
 LINK+= -lxcb -lxcb-shm -lxcb-randr -lrt
 .PHONY: final
 final: $(BIND)/$(NAME)
+
+ifeq ($(EXAMPLE), willis)
+SRCS+= $(SUBD)/willis/src/x11.c
+INCL+= -I$(SUBD)/willis/src
+endif
 endif
 
 ## wayland
@@ -155,3 +166,15 @@ remotes:
 	@echo "registering remotes"
 	@git remote add github git@github.com:cylgom/$(NAME).git
 	@git remote add gitea ssh://git@git.cylgom.net:2999/cylgom/$(NAME).git
+
+github:
+	@echo "sourcing submodules from https://github.com"
+	@cp .github .gitmodules
+	@git submodule sync
+	@git submodule update --init --remote
+
+gitea:
+	@echo "sourcing submodules from https://git.cylgom.net"
+	@cp .gitea .gitmodules
+	@git submodule sync
+	@git submodule update --init --remote
