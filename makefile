@@ -47,6 +47,9 @@ endif
 ifeq ($(EXAMPLE), willis)
 FLAGS+= -DGLOBOX_RENDER_SWR
 SRCS = $(SRCD)/main_willis.c
+LINK+= -lxkbcommon-x11
+LINK+= -lxkbcommon
+LINK+= -lxcb-xkb
 endif
 
 # windowing backends
@@ -62,6 +65,7 @@ final: $(BIND)/$(NAME)
 
 ifeq ($(EXAMPLE), willis)
 FLAGS+= -DWILLIS_DEBUG
+FLAGS+= -DWILLIS_X11
 SRCS+= $(SUBD)/willis/src/x11.c
 SRCS+= $(SUBD)/willis/src/debug.c
 INCL+= -I$(SUBD)/willis/src

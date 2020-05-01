@@ -43,9 +43,18 @@ void callback(
 	void* data)
 {
 	printf(
-		"%s\n%s\n\n",
+		"%s\n%s\n",
 		willis_event_code_names[event_code],
 		willis_event_state_names[event_state]);
+
+	if (willis->utf8_string != NULL)
+	{
+		printf(
+			"%s\n",
+			willis->utf8_string);
+	}
+
+	printf("\n");
 }
 
 int main()
@@ -73,12 +82,20 @@ int main()
 
 		// event handling
 		struct willis willis;
-		union willis_display_system union_fd;
-		union_fd.descriptor = ctx.fd.descriptor;
+
+		void* display_system;
+
+#if defined(WILLIS_X11)
+		display_system = ctx.x11_conn;
+#elif defined(WILLIS_WAYLAND)
+#elif defined(WILLIS_WIN)
+#elif defined(WILLIS_QUARTZ)
+#endif
 
 		willis_init(
 			&willis,
-			union_fd,
+			display_system,
+			true,
 			callback,
 			NULL);
 
