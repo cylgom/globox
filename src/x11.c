@@ -139,17 +139,15 @@ inline void create_window(struct globox* globox, xcb_screen_t* screen)
 #if defined(GLOBOX_RENDER_SWR) || defined(GLOBOX_RENDER_VLK)
 	xcb_visualid_t visual_id = screen->root_visual;
 
-	uint32_t value_list[2] =
-	{
-		XCB_BACK_PIXMAP_NONE,
-		XCB_EVENT_MASK_EXPOSURE
-		| XCB_EVENT_MASK_STRUCTURE_NOTIFY
-		| XCB_EVENT_MASK_PROPERTY_CHANGE,
-	};
-
-	uint32_t value_mask =
+	globox->x11_attr_mask = 
 		XCB_CW_BACK_PIXMAP
 		| XCB_CW_EVENT_MASK;
+	globox->x11_attr_val[0] =
+		XCB_BACK_PIXMAP_NONE,
+	globox->x11_attr_val[1] =
+		XCB_EVENT_MASK_EXPOSURE
+		| XCB_EVENT_MASK_STRUCTURE_NOTIFY
+		| XCB_EVENT_MASK_PROPERTY_CHANGE;
 #endif
 
 #ifdef GLOBOX_RENDER_OGL
@@ -199,19 +197,18 @@ inline void create_window(struct globox* globox, xcb_screen_t* screen)
 		screen->root,
 		visual_id);
 
-	uint32_t value_list[3] =
-	{
-		XCB_BACK_PIXMAP_NONE,
-		XCB_EVENT_MASK_EXPOSURE
-		| XCB_EVENT_MASK_STRUCTURE_NOTIFY
-		| XCB_EVENT_MASK_PROPERTY_CHANGE,
-		colormap,
-	};
-
-	uint32_t value_mask =
+	globox->x11_attr_mask = 
 		XCB_CW_BACK_PIXMAP
 		| XCB_CW_EVENT_MASK
 		| XCB_CW_COLORMAP;
+	globox->x11_attr_val[0] =
+		XCB_BACK_PIXMAP_NONE;
+	globox->x11_attr_val[1] =
+		XCB_EVENT_MASK_EXPOSURE
+		| XCB_EVENT_MASK_STRUCTURE_NOTIFY
+		| XCB_EVENT_MASK_PROPERTY_CHANGE;
+	globox->x11_attr_val[2] =
+		colormap;
 #endif
 
 	globox->x11_win = xcb_generate_id(globox->x11_conn);
@@ -228,8 +225,8 @@ inline void create_window(struct globox* globox, xcb_screen_t* screen)
 		0,
 		XCB_WINDOW_CLASS_INPUT_OUTPUT,
 		visual_id,
-		value_mask,
-		value_list);
+		globox->x11_attr_mask,
+		globox->x11_attr_val);
 }
 
 inline void create_gfx(struct globox* globox, xcb_screen_t* screen)

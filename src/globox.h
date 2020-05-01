@@ -82,6 +82,11 @@ struct globox
 	bool closed;
 	int fd_frame;
 
+	void (*event_callback)(
+		void* event,
+		void* data);
+	void* event_callback_data;
+
 	// nix
 #if defined(GLOBOX_X11) || defined(GLOBOX_WAYLAND)
 	int epoll_fd;
@@ -93,6 +98,9 @@ struct globox
 	xcb_atom_t x11_atoms[ATOM_COUNT];
 	xcb_window_t x11_win;
 	int x11_screen;
+
+	uint32_t x11_attr_mask;
+	uint32_t x11_attr_val[3];
 
 	#ifdef GLOBOX_RENDER_SWR
 	xcb_shm_segment_info_t x11_shm;
@@ -237,5 +245,13 @@ void globox_set_state(struct globox* globox, enum globox_state state);
 char* globox_get_title(struct globox* globox);
 enum globox_state globox_get_state(struct globox* globox);
 void globox_get_size(struct globox* globox, uint32_t* width, uint32_t* height);
+
+// external event handling helpers
+bool globox_enable_input(
+	struct globox* globox,
+	void (*callback)(
+		void* event,
+		void* data),
+	void* data);
 
 #endif

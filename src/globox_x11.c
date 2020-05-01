@@ -317,6 +317,7 @@ inline bool globox_handle_events(struct globox* globox)
 			}
 			default:
 			{
+				globox->event_callback(event, globox->event_callback_data);
 				free(event);
 
 				break;
@@ -627,6 +628,44 @@ inline void globox_get_size(struct globox* globox, uint32_t* width, uint32_t* he
 {
 	*width = globox->width;
 	*height = globox->height;
+}
+
+bool globox_enable_input(
+	struct globox* globox,
+	void (*callback)(
+		void* event,
+		void* data),
+	void* data)
+{
+	xcb_void_cookie_t cookie;
+	xcb_generic_error_t* error;
+
+	globox->event_callback = callback;
+	globox->event_callback_data = data;
+
+	globox->x11_attr_val[1] |= 
+		XCB_EVENT_MASK_KEY_PRESS
+		| XCB_EVENT_MASK_KEY_RELEASE
+		| XCB_EVENT_MASK_BUTTON_PRESS
+		| XCB_EVENT_MASK_BUTTON_RELEASE
+		| XCB_EVENT_MASK_POINTER_MOTION;
+
+	cookie = xcb_change_window_attributes_checked(
+		globox->x11_conn,
+		globox->x11_win,
+		globox->x11_attr_mask,
+		globox->x11_attr_val);
+
+	error = xcb_request_check(
+		globox->x11_conn,
+		cookie);
+
+	if (error != NULL)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 #endif

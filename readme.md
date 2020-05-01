@@ -82,8 +82,10 @@ Linux + X11 + OpenGL
 Globox is not dynamic (yet) and you must choose your target context type and
 display system before compiling. This is done through environment variables:
 
-Set `RENDER` to
+Set `EXAMPLE` to
  - `swr`, for software rendering
+ - `willis`, for software rendering and event handling with
+   [willis](https://github.com/cylgom/willis)
  - `ogl`, for OpenGL (at the moment, only X11 is supported)
  - `vlk`, for Vulkan (at the moment, only X11 is supported)
 
@@ -96,7 +98,7 @@ Set `BACKEND` to
 You can also change the default values (`swr`/`x11`) directly in the `makefile`.
 To compile, simply run make:
 ```
-RENDER=swr BACKEND=wayland make
+EXAMPLE=swr BACKEND=wayland make
 ```
 
 ## Running
