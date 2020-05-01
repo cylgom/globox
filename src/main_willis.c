@@ -1,5 +1,6 @@
 #include "globox.h"
 #include "willis.h"
+
 #include <stdio.h>
 
 extern unsigned char iconpix_beg;
@@ -41,7 +42,10 @@ void callback(
 	enum willis_event_state event_state,
 	void* data)
 {
-	printf("%d %d\n", event_code, event_state);
+	printf(
+		"%s\n%s\n\n",
+		willis_event_code_names[event_code],
+		willis_event_state_names[event_state]);
 }
 
 int main()
