@@ -54,6 +54,14 @@ void callback(
 			willis->utf8_string);
 	}
 
+	if (event_code == WILLIS_MOUSE_MOTION)
+	{
+		printf(
+			"%i %i\n",
+			willis->mouse_x,
+			willis->mouse_y);
+	}
+
 	printf("\n");
 }
 
