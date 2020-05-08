@@ -67,6 +67,9 @@ void callback(
 
 int main()
 {
+	struct willis willis;
+	void* willis_backend_link;
+
 	// create window
 	bool ok = globox_open(
 		&ctx,
@@ -76,7 +79,9 @@ int main()
 		0,
 		100,
 		100,
-		false); // true for frame event
+		false, // true for frame event
+		willis_handle_events,
+		&willis);
 
 	if (ok)
 	{
@@ -89,27 +94,20 @@ int main()
 		globox_commit(&ctx);
 
 		// event handling
-		struct willis willis;
-
-		void* display_system;
-
 #if defined(WILLIS_X11)
-		display_system = ctx.x11_conn;
+		willis_backend_link = ctx.x11_conn;
 #elif defined(WILLIS_WAYLAND)
+		willis_backend_link = ctx.wl_seat;
 #elif defined(WILLIS_WIN)
 #elif defined(WILLIS_QUARTZ)
 #endif
 
 		willis_init(
 			&willis,
-			display_system,
+			willis_backend_link,
 			true,
 			callback,
 			NULL);
-
-		globox_enable_input(&ctx,
-			willis_handle_events,
-			&willis);
 
 		while (!ctx.closed)
 		{

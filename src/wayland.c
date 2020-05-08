@@ -245,6 +245,22 @@ void registry_global(
 			&(globox->wl_output_listener),
 			globox);
 	}
+	else if ((strcmp(interface, wl_seat_interface.name) == 0)
+		&& (globox->event_callback != NULL))
+	{
+		globox->wl_seat = wl_registry_bind(
+			wl_registry,
+			name,
+			&wl_seat_interface,
+			7); // beware updated very often
+
+		// While `wl_registry_bind` and `wl_seat_add_listener` are very nicely
+		// separated in libwayland-client it seems the protocol does not handle
+		// calling the latter outside of the global registry callback.
+		// This is why we somehow end up with worse an integration than XCB's,
+		// and wonder what happened in the *seven* revisions of this interface.
+		globox->event_callback(globox->wl_seat, globox->event_callback_data);
+	}
 }
 
 void registry_global_remove(

@@ -19,7 +19,7 @@ SRCS_OBJS = $(OBJD)/$(RESD)/icon/iconpix.o
 LINK =
 
 EXAMPLE ?= willis
-BACKEND ?= x11
+BACKEND ?= wayland
 
 # rendering backends
 ## software
@@ -47,9 +47,11 @@ endif
 ifeq ($(EXAMPLE), willis)
 FLAGS+= -DGLOBOX_RENDER_SWR
 SRCS = $(SRCD)/main_willis.c
+ifeq ($(BACKEND), x11)
 LINK+= -lxkbcommon-x11
 LINK+= -lxkbcommon
 LINK+= -lxcb-xkb
+endif
 endif
 
 # windowing backends
@@ -82,6 +84,14 @@ SRCS+= $(INCD)/xdg-shell-protocol.c
 LINK = -lwayland-client -lrt
 .PHONY: final
 final: | $(INCD) $(BIND)/$(NAME)
+
+ifeq ($(EXAMPLE), willis)
+FLAGS+= -DWILLIS_DEBUG
+FLAGS+= -DWILLIS_WAYLAND
+SRCS+= $(SUBD)/willis/src/wayland.c
+SRCS+= $(SUBD)/willis/src/debug.c
+INCL+= -I$(SUBD)/willis/src
+endif
 endif
 
 ## win

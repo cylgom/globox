@@ -143,6 +143,7 @@ struct globox
     struct wl_surface *wl_surface;
 	struct wl_callback *wl_frame_callback;
 	struct wl_callback_listener wl_surface_frame_listener;
+	struct wl_seat* wl_seat;
     struct xdg_surface *xdg_surface;
     struct xdg_toplevel *xdg_toplevel;
 	struct xdg_toplevel_listener xdg_toplevel_listener;
@@ -206,7 +207,11 @@ bool globox_open(
 	int32_t y,
 	uint32_t width,
 	uint32_t height,
-	bool frame_event);
+	bool frame_event,
+	void (*callback)(
+		void* event,
+		void* data),
+	void* data);
 
 void globox_close(
 	struct globox* globox);
@@ -245,13 +250,5 @@ void globox_set_state(struct globox* globox, enum globox_state state);
 char* globox_get_title(struct globox* globox);
 enum globox_state globox_get_state(struct globox* globox);
 void globox_get_size(struct globox* globox, uint32_t* width, uint32_t* height);
-
-// external event handling helpers
-bool globox_enable_input(
-	struct globox* globox,
-	void (*callback)(
-		void* event,
-		void* data),
-	void* data);
 
 #endif

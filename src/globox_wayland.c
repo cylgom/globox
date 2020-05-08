@@ -21,7 +21,11 @@ inline bool globox_open(
 	int32_t y,
 	uint32_t width,
 	uint32_t height,
-	bool frame_event)
+	bool frame_event,
+	void (*callback)(
+		void* event,
+		void* data),
+	void* data)
 {
 	bool err;
 
@@ -38,6 +42,8 @@ inline bool globox_open(
 	globox->wl_icon_len = 0;
 	globox->wl_screen_width = 1920;
 	globox->wl_screen_height = 1080;
+	globox->event_callback = callback;
+	globox->event_callback_data = data;
 
 	// callbacks
 	globox->wl_buffer_listener.release = wl_buffer_release;
