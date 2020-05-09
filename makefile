@@ -52,6 +52,9 @@ LINK+= -lxkbcommon-x11
 LINK+= -lxkbcommon
 LINK+= -lxcb-xkb
 endif
+ifeq ($(BACKEND), wayland)
+LINK+= -lxkbcommon
+endif
 endif
 
 # windowing backends
@@ -69,6 +72,7 @@ ifeq ($(EXAMPLE), willis)
 FLAGS+= -DWILLIS_DEBUG
 FLAGS+= -DWILLIS_X11
 SRCS+= $(SUBD)/willis/src/x11.c
+SRCS+= $(SUBD)/willis/src/xkb.c
 SRCS+= $(SUBD)/willis/src/debug.c
 INCL+= -I$(SUBD)/willis/src
 endif
@@ -81,7 +85,7 @@ SRCS+= $(SRCD)/nix.c
 SRCS+= $(SRCD)/wayland.c
 SRCS+= $(SRCD)/globox_wayland.c
 SRCS+= $(INCD)/xdg-shell-protocol.c
-LINK = -lwayland-client -lrt
+LINK+= -lwayland-client -lrt
 .PHONY: final
 final: | $(INCD) $(BIND)/$(NAME)
 
@@ -89,6 +93,7 @@ ifeq ($(EXAMPLE), willis)
 FLAGS+= -DWILLIS_DEBUG
 FLAGS+= -DWILLIS_WAYLAND
 SRCS+= $(SUBD)/willis/src/wayland.c
+SRCS+= $(SUBD)/willis/src/xkb.c
 SRCS+= $(SUBD)/willis/src/debug.c
 INCL+= -I$(SUBD)/willis/src
 endif
