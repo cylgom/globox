@@ -124,6 +124,8 @@ int main()
 			handler();
 		}
 
+		willis_free(&willis);
+
 		globox_close(&ctx);
 	}
 
