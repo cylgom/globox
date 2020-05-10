@@ -352,8 +352,11 @@ inline bool globox_handle_events(struct globox* globox)
 			}
 			default:
 			{
-				globox->event_callback(event, globox->event_callback_data);
-				free(event);
+				if (globox->event_callback != NULL)
+				{
+					globox->event_callback(event, globox->event_callback_data);
+					free(event);
+				}
 
 				break;
 			}

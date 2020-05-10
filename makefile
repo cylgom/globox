@@ -19,7 +19,7 @@ SRCS_OBJS = $(OBJD)/$(RESD)/icon/iconpix.o
 LINK =
 
 EXAMPLE ?= willis
-BACKEND ?= wayland
+BACKEND ?= win
 
 # rendering backends
 ## software
@@ -109,6 +109,14 @@ LINK+= -lgdi32 -mwindows
 CMD = wine ./$(NAME)
 .PHONY: final
 final: $(BIND)/$(NAME)
+
+ifeq ($(EXAMPLE), willis)
+FLAGS+= -DWILLIS_DEBUG
+FLAGS+= -DWILLIS_WIN
+SRCS+= $(SUBD)/willis/src/win.c
+SRCS+= $(SUBD)/willis/src/debug.c
+INCL+= -I$(SUBD)/willis/src
+endif
 endif
 
 ## quartz

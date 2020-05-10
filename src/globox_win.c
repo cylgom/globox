@@ -98,7 +98,7 @@ HICON bitmap_to_icon(struct globox* globox, BITMAP* bmp)
 	return icon;
 }
 
-inline bool globox_open(
+bool globox_open(
 	struct globox* globox,
 	enum globox_state state,
 	const char* title,
@@ -106,7 +106,11 @@ inline bool globox_open(
 	int32_t y,
 	uint32_t width,
 	uint32_t height,
-	bool frame_event)
+	bool frame_event,
+	void (*callback)(
+		void* event,
+		void* data),
+	void* data)
 {
 	// common init
 	globox->init_x = x;
@@ -118,6 +122,8 @@ inline bool globox_open(
 	globox->redraw = true;
 	globox->frame_event = frame_event;
 	globox->closed = false;
+	globox->event_callback = callback;
+	globox->event_callback_data = data;
 
 #if 0
 	globox->fd_frame = timerfd_create(CLOCK_REALTIME, 0);
@@ -279,6 +285,17 @@ inline bool globox_handle_events(struct globox* globox)
 				globox->redraw = true;
 
 				resize(globox);
+			}
+
+			break;
+		}
+		default:
+		{
+			if (globox->event_callback != NULL)
+			{
+				globox->event_callback(
+					&(globox->win_msg),
+					globox->event_callback_data);
 			}
 
 			break;

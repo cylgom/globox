@@ -97,8 +97,9 @@ int main()
 #if defined(WILLIS_X11)
 		willis_backend_link = ctx.x11_conn;
 #elif defined(WILLIS_WAYLAND)
-		willis_backend_link = ctx.wl_seat;
+		willis_backend_link = NULL;
 #elif defined(WILLIS_WIN)
+		willis_backend_link = NULL;
 #elif defined(WILLIS_QUARTZ)
 #endif
 
