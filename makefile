@@ -19,7 +19,7 @@ SRCS_OBJS = $(OBJD)/$(RESD)/icon/iconpix.o
 LINK =
 
 EXAMPLE ?= willis
-BACKEND ?= win
+BACKEND ?= quartz
 
 # rendering backends
 ## software
@@ -131,6 +131,14 @@ LINK+= -framework AppKit
 #CMD = wine ./$(NAME)
 .PHONY: final
 final: $(BIND)/$(NAME)
+
+ifeq ($(EXAMPLE), willis)
+FLAGS+= -DWILLIS_DEBUG
+FLAGS+= -DWILLIS_QUARTZ
+SRCS+= $(SUBD)/willis/src/quartz.c
+SRCS+= $(SUBD)/willis/src/debug.c
+INCL+= -I$(SUBD)/willis/src
+endif
 endif
 
 # rest of the makefile

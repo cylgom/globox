@@ -101,6 +101,7 @@ int main()
 #elif defined(WILLIS_WIN)
 		willis_backend_link = NULL;
 #elif defined(WILLIS_QUARTZ)
+		willis_backend_link = NULL;
 #endif
 
 		willis_init(

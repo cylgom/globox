@@ -17,7 +17,11 @@ inline bool globox_open(
 	int32_t y,
 	uint32_t width,
 	uint32_t height,
-	bool frame_event)
+	bool frame_event,
+	void (*callback)(
+		void* event,
+		void* data),
+	void* data)
 {
 	// common init
 	globox->init_x = x;
@@ -31,6 +35,8 @@ inline bool globox_open(
 	globox->closed = false;
 	globox->title = NULL;
 	globox->state = GLOBOX_STATE_REGULAR;
+	globox->event_callback = callback;
+	globox->event_callback_data = data;
 
 	// buffer allocation, right here, right now
 	globox->argb = (uint32_t*) malloc(4 * width * height);
@@ -221,6 +227,9 @@ inline bool globox_handle_events(struct globox* globox)
 		}
 		else
 		{
+			globox->event_callback(event, globox->event_callback_data);
+
+			// required to manipulate the window with the mouse
 			quartz_msg_send(
 				globox->fd.app,
 				sel_getUid("sendEvent:"),
