@@ -55,6 +55,7 @@ struct quartz_app_delegate
 };
 
 id(*quartz_msg_id)(id, SEL);
+void(*quartz_msg_int)(id, SEL, int);
 id*(*quartz_msg_date)(id, SEL);
 bool(*quartz_msg_bool)(id, SEL);
 void(*quartz_msg_void)(id, SEL);

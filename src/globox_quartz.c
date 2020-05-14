@@ -138,6 +138,13 @@ inline bool globox_open(
 
 	while (quartz_msg_bool(app, sel_getUid("isRunning")));
 
+	// the `1` below is not clearly defined in apple's online reference document
+	// we use it exceptionally because the benefits are huge and fuck you apple
+	quartz_msg_int(
+		app,
+		sel_getUid("setActivationPolicy:"),
+		1);
+
 	return true;
 }
 

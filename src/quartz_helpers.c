@@ -1,6 +1,9 @@
 #include "quartz_helpers.h"
 
 // redefine ambiguous symbols
+void(*quartz_msg_int)(id, SEL, int) =
+	(void(*)(id, SEL, int)) objc_msgSend;
+
 id(*quartz_msg_id)(id, SEL) =
 	(id(*)(id, SEL)) objc_msgSend;
 
