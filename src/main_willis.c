@@ -47,6 +47,18 @@ void callback(
 		willis_event_code_names[event_code],
 		willis_event_state_names[event_state]);
 
+	if (event_code == WILLIS_KEY_Q)
+	{
+		if (event_state == WILLIS_STATE_PRESS)
+		{
+			willis_mouse_grab(willis);
+		}
+		else
+		{
+			willis_mouse_ungrab(willis);
+		}
+	}
+
 	if (willis->utf8_string != NULL)
 	{
 		printf(
@@ -56,10 +68,20 @@ void callback(
 
 	if (event_code == WILLIS_MOUSE_MOTION)
 	{
-		printf(
-			"%i %i\n",
-			willis->mouse_x,
-			willis->mouse_y);
+		if (willis->mouse_grab == true)
+		{
+			printf(
+				"diff: %x %x\n",
+				willis->diff_x,
+				willis->diff_y);
+		}
+		else
+		{
+			printf(
+				"pos: %i %i\n",
+				willis->mouse_x,
+				willis->mouse_y);
+		}
 	}
 
 	printf("\n");
