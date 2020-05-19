@@ -1,7 +1,7 @@
 NAME = globox
 CC = gcc
 FLAGS = -std=c99 -pedantic -g
-FLAGS+= -Wall -Wextra -Werror=vla -Werror -Wno-unused-parameter 
+FLAGS+= -Wall -Wextra -Werror=vla -Werror -Wno-unused-parameter -Wno-address-of-packed-member
 VALGRIND = --show-leak-kinds=all --track-origins=yes --leak-check=full --suppressions=../res/valgrind.supp
 CMD = ./$(NAME)
 
@@ -19,7 +19,7 @@ SRCS_OBJS = $(OBJD)/$(RESD)/icon/iconpix.o
 LINK =
 
 EXAMPLE ?= willis
-BACKEND ?= quartz
+BACKEND ?= x11
 
 # rendering backends
 ## software
@@ -51,6 +51,7 @@ ifeq ($(BACKEND), x11)
 LINK+= -lxkbcommon-x11
 LINK+= -lxkbcommon
 LINK+= -lxcb-xkb
+LINK+= -lxcb-xinput
 endif
 ifeq ($(BACKEND), wayland)
 LINK+= -lxkbcommon

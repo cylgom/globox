@@ -97,6 +97,7 @@ struct globox
 	xcb_connection_t* x11_conn;
 	xcb_atom_t x11_atoms[ATOM_COUNT];
 	xcb_window_t x11_win;
+	xcb_window_t x11_root;
 	int x11_screen;
 
 	uint32_t x11_attr_mask;

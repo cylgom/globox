@@ -89,6 +89,7 @@ inline bool globox_open(
 
 	globox->fd.descriptor = xcb_get_file_descriptor(globox->x11_conn);
 	xcb_screen_t* screen = get_screen(globox);
+	globox->x11_root = screen->root;
 
 	// create the window
 	create_window(globox, screen);
