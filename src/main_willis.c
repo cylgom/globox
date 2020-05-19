@@ -71,9 +71,9 @@ void callback(
 		if (willis->mouse_grab == true)
 		{
 			printf(
-				"diff: %lx %lx\n",
-				willis->diff_x,
-				willis->diff_y);
+				"diff: %x %x\n",
+				(uint32_t) (willis->diff_x >> 32),
+				(uint32_t) (willis->diff_y >> 32));
 		}
 		else
 		{
