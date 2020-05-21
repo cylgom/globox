@@ -52,6 +52,7 @@ LINK+= -lxkbcommon-x11
 LINK+= -lxkbcommon
 LINK+= -lxcb-xkb
 LINK+= -lxcb-xinput
+LINK+= -lxcb-xfixes
 endif
 ifeq ($(BACKEND), wayland)
 LINK+= -lxkbcommon
