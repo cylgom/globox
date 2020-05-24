@@ -31,7 +31,9 @@ int main()
 		0,
 		100,
 		100,
-		true);
+		true,
+		NULL,
+		NULL);
 
 	if (ok)
 	{
