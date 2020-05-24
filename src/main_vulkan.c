@@ -71,7 +71,7 @@ const char* ext[] =
 // optional vulkan layers info
 const char* layers[] =
 {
-	"VK_LAYER_LUNARG_standard_validation"
+	"VK_LAYER_KHRONOS_validation"
 };
 
 // print available vulkan extensions
