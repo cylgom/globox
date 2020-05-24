@@ -15,6 +15,8 @@
 #include <unistd.h>
 #include <wayland-client.h>
 #include "xdg-shell-client-protocol.h"
+#include "zwp-relative-pointer-protocol.h"
+#include "zwp-pointer-constraints-protocol.h"
 #include "globox.h"
 
 inline bool surface_init(struct globox* globox)
@@ -260,6 +262,22 @@ void registry_global(
 		// This is why we somehow end up with worse an integration than XCB's,
 		// and wonder what happened in the *seven* revisions of this interface.
 		globox->event_callback(globox->wl_seat, globox->event_callback_data);
+	}
+	else if (strcmp(interface, zwp_relative_pointer_manager_v1_interface.name) == 0)
+	{
+		globox->wl_relative_pointer = wl_registry_bind(
+			wl_registry,
+			name,
+			&zwp_relative_pointer_manager_v1_interface,
+			1);
+	}
+	else if (strcmp(interface, zwp_pointer_constraints_v1_interface.name) == 0)
+	{
+		globox->wl_pointer_constraints = wl_registry_bind(
+			wl_registry,
+			name,
+			&zwp_pointer_constraints_v1_interface,
+			1);
 	}
 }
 

@@ -19,7 +19,7 @@ SRCS_OBJS = $(OBJD)/$(RESD)/icon/iconpix.o
 LINK =
 
 EXAMPLE ?= willis
-BACKEND ?= x11
+BACKEND ?= wayland
 
 # rendering backends
 ## software
@@ -87,6 +87,8 @@ SRCS+= $(SRCD)/nix.c
 SRCS+= $(SRCD)/wayland.c
 SRCS+= $(SRCD)/globox_wayland.c
 SRCS+= $(INCD)/xdg-shell-protocol.c
+SRCS+= $(INCD)/zwp-relative-pointer-protocol.c
+SRCS+= $(INCD)/zwp-pointer-constraints-protocol.c
 LINK+= -lwayland-client -lrt
 .PHONY: final
 final: | $(INCD) $(BIND)/$(NAME)
@@ -157,6 +159,18 @@ $(INCD):
 	@wayland-scanner client-header \
 	< /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml \
 	> $@/xdg-shell-client-protocol.h
+	@wayland-scanner private-code \
+	< /usr/share/wayland-protocols/unstable/pointer-constraints/pointer-constraints-unstable-v1.xml \
+	> $@/zwp-pointer-constraints-protocol.c
+	@wayland-scanner client-header \
+	< /usr/share/wayland-protocols/unstable/pointer-constraints/pointer-constraints-unstable-v1.xml \
+	> $@/zwp-pointer-constraints-protocol.h
+	@wayland-scanner private-code \
+	< /usr/share/wayland-protocols/unstable/relative-pointer/relative-pointer-unstable-v1.xml \
+	> $@/zwp-relative-pointer-protocol.c
+	@wayland-scanner client-header \
+	< /usr/share/wayland-protocols/unstable/relative-pointer/relative-pointer-unstable-v1.xml \
+	> $@/zwp-relative-pointer-protocol.h
 
 ## icon binary
 $(RESD)/icon/iconpix.bin:

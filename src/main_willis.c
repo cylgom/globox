@@ -126,7 +126,14 @@ int main()
 
 		willis_backend_link = &data;
 #elif defined(WILLIS_WAYLAND)
-		willis_backend_link = NULL;
+		struct willis_wl_data data =
+		{
+			.wl_surface = ctx.wl_surface,
+			.wl_relative_pointer = ctx.wl_relative_pointer,
+			.wl_pointer_constraints = ctx.wl_pointer_constraints,
+		};
+
+		willis_backend_link = &data;
 #elif defined(WILLIS_WIN)
 		willis_backend_link = NULL;
 #elif defined(WILLIS_QUARTZ)

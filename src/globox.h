@@ -151,6 +151,9 @@ struct globox
 	struct wl_output* wl_output;
 	struct wl_output_listener wl_output_listener;
 
+	struct zwp_relative_pointer_manager_v1* wl_relative_pointer;
+	struct zwp_pointer_constraints_v1* wl_pointer_constraints;
+
 	int wl_buffer_fd;
 	struct wl_shm_pool *wl_pool;
 	struct wl_buffer *wl_buffer;
