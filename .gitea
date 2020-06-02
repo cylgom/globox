@@ -1,3 +1,6 @@
 [submodule "sub/willis"]
 	path = sub/willis
 	url = https://git.cylgom.net/cylgom/willis.git
+[submodule "sub/cursoryx"]
+	path = sub/cursoryx
+	url = https://git.cylgom.net/cylgom/cursoryx.git
