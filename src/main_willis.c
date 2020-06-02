@@ -1,5 +1,6 @@
 #include "globox.h"
 #include "willis.h"
+#include "cursoryx.h"
 
 #include <stdio.h>
 
@@ -8,6 +9,7 @@ extern unsigned char iconpix_end;
 extern unsigned char iconpix_len;
 
 struct globox ctx = {0};
+struct cursoryx cursoryx = {0};
 
 void handler()
 {
@@ -91,6 +93,7 @@ int main()
 {
 	struct willis willis;
 	void* willis_backend_link;
+	void* cursoryx_backend_link;
 
 	// create window
 	bool ok = globox_open(
@@ -147,9 +150,33 @@ int main()
 			callback,
 			NULL);
 
+		// init cursoryx
+#if defined (CURSORYX_WAYLAND)
+		struct cursoryx_wayland cursoryx_data =
+		{
+			.compositor = ctx.wl_compositor,
+			.pointer = willis.wl_pointer,
+			.shm = ctx.wl_shm,
+		};
+
+		cursoryx_backend_link = &cursoryx_data;
+#elif defined (CURSORYX_X11)
+#elif defined (CURSORYX_WIN)
+#elif defined (CURSORYX_QUARTZ)
+#endif
+		cursoryx_start(
+			&cursoryx,
+			32,
+			cursoryx_backend_link);
+
 		while (!ctx.closed)
 		{
 			globox_prepoll(&ctx);
+
+			// use cursoryx
+			cursoryx_set(
+				&cursoryx,
+				CURSORYX_BUSY);
 
 			// internal event dispatching by globox
 			// `globox_poll_events` is an alternative

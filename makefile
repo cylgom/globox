@@ -96,10 +96,14 @@ final: | $(INCD) $(BIND)/$(NAME)
 ifeq ($(EXAMPLE), willis)
 FLAGS+= -DWILLIS_DEBUG
 FLAGS+= -DWILLIS_WAYLAND
+FLAGS+= -DCURSORYX_WAYLAND
 SRCS+= $(SUBD)/willis/src/wayland.c
 SRCS+= $(SUBD)/willis/src/xkb.c
 SRCS+= $(SUBD)/willis/src/debug.c
+SRCS+= $(SUBD)/cursoryx/src/wayland.c
 INCL+= -I$(SUBD)/willis/src
+INCL+= -I$(SUBD)/cursoryx/src
+LINK+= -lwayland-cursor
 endif
 endif
 
