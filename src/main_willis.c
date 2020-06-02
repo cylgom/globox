@@ -161,6 +161,14 @@ int main()
 
 		cursoryx_backend_link = &cursoryx_data;
 #elif defined (CURSORYX_X11)
+		struct cursoryx_x11 cursoryx_data =
+		{
+			.conn = ctx.x11_conn,
+			.window = ctx.x11_win,
+			.screen = ctx.x11_screen_obj,
+		};
+
+		cursoryx_backend_link = &cursoryx_data;
 #elif defined (CURSORYX_WIN)
 #elif defined (CURSORYX_QUARTZ)
 #endif

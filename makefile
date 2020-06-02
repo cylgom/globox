@@ -19,7 +19,7 @@ SRCS_OBJS = $(OBJD)/$(RESD)/icon/iconpix.o
 LINK =
 
 EXAMPLE ?= willis
-BACKEND ?= wayland
+BACKEND ?= x11
 
 # rendering backends
 ## software
@@ -53,9 +53,11 @@ LINK+= -lxkbcommon
 LINK+= -lxcb-xkb
 LINK+= -lxcb-xinput
 LINK+= -lxcb-xfixes
+LINK+= -lxcb-cursor
 endif
 ifeq ($(BACKEND), wayland)
 LINK+= -lxkbcommon
+LINK+= -lwayland-cursor
 endif
 endif
 
@@ -73,10 +75,13 @@ final: $(BIND)/$(NAME)
 ifeq ($(EXAMPLE), willis)
 FLAGS+= -DWILLIS_DEBUG
 FLAGS+= -DWILLIS_X11
+FLAGS+= -DCURSORYX_X11
 SRCS+= $(SUBD)/willis/src/x11.c
 SRCS+= $(SUBD)/willis/src/xkb.c
 SRCS+= $(SUBD)/willis/src/debug.c
+SRCS+= $(SUBD)/cursoryx/src/x11.c
 INCL+= -I$(SUBD)/willis/src
+INCL+= -I$(SUBD)/cursoryx/src
 endif
 endif
 
@@ -103,7 +108,6 @@ SRCS+= $(SUBD)/willis/src/debug.c
 SRCS+= $(SUBD)/cursoryx/src/wayland.c
 INCL+= -I$(SUBD)/willis/src
 INCL+= -I$(SUBD)/cursoryx/src
-LINK+= -lwayland-cursor
 endif
 endif
 

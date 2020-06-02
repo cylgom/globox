@@ -88,14 +88,14 @@ inline bool globox_open(
 #endif
 
 	globox->fd.descriptor = xcb_get_file_descriptor(globox->x11_conn);
-	xcb_screen_t* screen = get_screen(globox);
-	globox->x11_root = screen->root;
+	globox->x11_screen_obj = get_screen(globox);
+	globox->x11_root = globox->x11_screen_obj->root;
 
 	// create the window
-	create_window(globox, screen);
+	create_window(globox, globox->x11_screen_obj);
 
 #ifdef GLOBOX_RENDER_SWR
-	create_gfx(globox, screen);
+	create_gfx(globox, globox->x11_screen_obj);
 	globox->x11_pixmap_update = false;
 #endif
 
@@ -128,7 +128,7 @@ inline bool globox_open(
 
 #ifdef GLOBOX_RENDER_SWR
 	// check display server settings compatibility
-	if (!visual_compatible(globox, screen))
+	if (!visual_compatible(globox, globox->x11_screen_obj))
 	{
 		return false;
 	}
