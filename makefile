@@ -19,7 +19,7 @@ SRCS_OBJS = $(OBJD)/$(RESD)/icon/iconpix.o
 LINK =
 
 EXAMPLE ?= willis
-BACKEND ?= x11
+BACKEND ?= win
 
 # rendering backends
 ## software
@@ -125,9 +125,12 @@ final: $(BIND)/$(NAME)
 ifeq ($(EXAMPLE), willis)
 FLAGS+= -DWILLIS_DEBUG
 FLAGS+= -DWILLIS_WIN
+FLAGS+= -DCURSORYX_WIN
 SRCS+= $(SUBD)/willis/src/win.c
 SRCS+= $(SUBD)/willis/src/debug.c
+SRCS+= $(SUBD)/cursoryx/src/win.c
 INCL+= -I$(SUBD)/willis/src
+INCL+= -I$(SUBD)/cursoryx/src
 endif
 endif
 

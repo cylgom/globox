@@ -170,11 +170,16 @@ int main()
 
 		cursoryx_backend_link = &cursoryx_data;
 #elif defined (CURSORYX_WIN)
+		struct cursoryx_win cursoryx_data =
+		{
+			.handle = ctx.win_handle,
+		};
+
+		cursoryx_backend_link = &cursoryx_data;
 #elif defined (CURSORYX_QUARTZ)
 #endif
 		cursoryx_start(
 			&cursoryx,
-			32,
 			cursoryx_backend_link);
 
 		while (!ctx.closed)
