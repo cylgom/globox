@@ -177,6 +177,7 @@ int main()
 
 		cursoryx_backend_link = &cursoryx_data;
 #elif defined (CURSORYX_QUARTZ)
+		cursoryx_backend_link = NULL;
 #endif
 		cursoryx_start(
 			&cursoryx,
@@ -189,7 +190,7 @@ int main()
 			// use cursoryx
 			cursoryx_set(
 				&cursoryx,
-				CURSORYX_BUSY);
+				CURSORYX_HAND);
 
 			// internal event dispatching by globox
 			// `globox_poll_events` is an alternative
