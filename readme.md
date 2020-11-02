@@ -71,7 +71,15 @@ The example makefile also requires some extra tools, starting with `objcopy`
 brew install binutils
 ```
 
+After installation, the binary can be found under
+```
+/usr/local/Cellar/binutils/VERSION_NUMBER/bin/objcopy
+```
+
 Another tool required is `objconv`, which sadly can't be installed with `brew`
 ```
 curl -O https://www.agner.org/optimize/objconv.zip
 ```
+
+You will have to unzip it as well as the `sources.zip` archive it contains.
+Run the `build.sh` script to generate an `objconv` binary.
