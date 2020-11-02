@@ -48,3 +48,30 @@ Under ArchLinux, Plasma's protocols can be installed using the
 
 The official protocols repository can be found on
 [invent.kde.org](https://invent.kde.org/libraries/plasma-wayland-protocols).
+
+### MacOS
+#### Cross-compiling from Linux
+
+#### Compiling from MacOS
+The MacOS backend can also be compiled from MacOS for easier debugging.
+*Do not download Xcode just for globox, it would be completely overkill!*
+Instead, you can get the bare MacOS SDK from Apple's "Software Update" servers.
+This will be way faster and doesn't even require registering an Apple account ;)
+For this, simply use [instant_macos_sdk](https://github.com/nullgemm/instant_macos_sdk).
+
+If you installed the SDK using the method recommended above, you must also
+install git, as it usually comes bundled with Xcode.
+You can use [Homebrew](https://brew.sh) for this.
+```
+brew install git
+```
+
+The example makefile also requires some extra tools, starting with `objcopy`
+```
+brew install binutils
+```
+
+Another tool required is `objconv`, which sadly can't be installed with `brew`
+```
+curl -O https://www.agner.org/optimize/objconv.zip
+```
