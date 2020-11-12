@@ -34,15 +34,16 @@ INCL+= -I$(INCD)
 ## main code files
 SRCS = $(SRCD)/globox.c
 SRCS+= $(SRCD)/globox_error.c
-SRCS_OBJS = $(OBJD)/$(RESD)/icon/iconpix.o
+SRCS_OBJS =
 
 # targets
-PLATFORM ?= WAYLAND
+PLATFORM ?= MACOS
 CONTEXT ?= SOFTWARE
 
-# X11
+## X11
 ifeq ($(PLATFORM), X11)
 SRCS+= $(SRCD)/x11/globox_x11.c
+SRCS_OBJS+= $(OBJD)/$(RESD)/icon/iconpix.o
 LINK+= -lxcb
 FLAGS+= -DGLOBOX_PLATFORM_X11
 
@@ -74,7 +75,7 @@ LINK+= -lXrender
 endif
 endif
 
-# WAYLAND
+## WAYLAND
 ifeq ($(PLATFORM), WAYLAND)
 SRCS+= $(SRCD)/wayland/globox_wayland.c
 SRCS+= $(SRCD)/wayland/globox_wayland_callbacks.c
@@ -83,6 +84,7 @@ SRCS+= $(INCD)/xdg-decoration-protocol.c
 SRCS+= $(INCD)/kde-blur-protocol.c
 SRCS+= $(INCD)/zwp-relative-pointer-protocol.c
 SRCS+= $(INCD)/zwp-pointer-constraints-protocol.c
+SRCS_OBJS+= $(OBJD)/$(RESD)/icon/iconpix.o
 LINK+= -lwayland-client -lrt
 FLAGS+= -DGLOBOX_PLATFORM_WAYLAND
 
@@ -104,12 +106,41 @@ LINK+= `pkg-config egl glesv2 --cflags --libs`
 endif
 endif
 
+## MACOS
+ifeq ($(PLATFORM), MACOS)
+CMD = ./$(NAME).app
+SRCS+= $(SRCD)/macos/globox_macos.c
+SRCS+= $(SRCD)/macos/globox_macos_helpers.c
+SRCS_OBJS+= $(OBJD)/$(RESD)/icon/iconpix_mach.o
+LINK+= -framework AppKit
+FLAGS+= -DGLOBOX_PLATFORM_MACOS
+
+ifeq ($(CONTEXT), SOFTWARE)
+FLAGS+= -DGLOBOX_CONTEXT_SOFTWARE
+SRCS+= example/software.c
+SRCS+= $(SRCD)/macos/software/globox_macos_software.c
+LINK+=
+endif
+
+ifeq ($(CONTEXT), EGL)
+FLAGS+= -DGLOBOX_CONTEXT_EGL
+SRCS+= example/egl.c
+SRCS+= $(SRCD)/macos/egl/globox_macos_egl.c
+LINK+= -lGL
+LINK+= -lEGL
+endif
+endif
+
 # object files list
 SRCS_OBJS+= $(patsubst %.c,$(OBJD)/%.o,$(SRCS))
 
 # bin
 .PHONY: final
+ifeq ($(PLATFORM), MACOS)
+final: $(BIND)/$(NAME).app
+else
 final: $(BIND)/$(NAME)
+endif
 
 ## wayland protocols
 ifeq ($(PLATFORM), WAYLAND)
@@ -161,6 +192,20 @@ $(OBJD)/$(RESD)/icon/iconpix.o: $(RESD)/icon/iconpix.bin
 	--rename-section .data=.iconpix \
 	$< $@
 
+## macOS icon
+$(RESD)/objconv/objconv:
+	@echo "making objconv"
+	@cd ./$(RESD)/objconv && ./makeobjconv.sh
+
+$(OBJD)/$(RESD)/icon/iconpix_mach.o: $(RESD)/icon/iconpix.bin $(RESD)/objconv/objconv
+	@echo "building icon object object and converting to mach-o (bug workaround)"
+	@mkdir -p $(@D)
+	@/usr/local/Cellar/binutils/*/bin/objcopy -I binary -O elf64-x86-64 -B i386:x86-64 \
+	--redefine-syms=$(RESD)/icon/syms.map \
+	--rename-section .data=.iconpix \
+	$< $(OBJD)/$(RESD)/icon/iconpix.o
+	@./$(RESD)/objconv/objconv -fmac64 -nu+ -v0 $(OBJD)/$(RESD)/icon/iconpix.o $@
+
 ## compilation
 $(OBJD)/%.o: %.c
 	@echo "building object $@"
@@ -171,6 +216,10 @@ $(BIND)/$(NAME): $(SRCS_OBJS)
 	@echo "compiling executable $@"
 	@mkdir -p $(@D)
 	@$(CC) -o $@ $^ $(LINK)
+
+$(BIND)/$(NAME).app: $(BIND)/$(NAME)
+	@echo "renaming binary to $@"
+	@mv $^ $@
 
 # tools
 ## valgrind memory leak detection

@@ -14,8 +14,9 @@
 	#include "x11/globox_x11.h"
 #elif defined(GLOBOX_PLATFORM_WINDOWS)
 	#include "windows/globox_windows.h"
-#elif defined(GLOBOX_PLATFORM_OSX)
-	#include "osx/globox_osx.h"
+#elif defined(GLOBOX_PLATFORM_MACOS)
+	#include "macos/globox_macos.h"
+	#include "macos/globox_macos_helpers.h"
 #endif
 
 #if defined(GLOBOX_CONTEXT_EGL)
@@ -213,9 +214,9 @@ void globox_wayland_save_serial(struct globox* globox, uint32_t serial);
 #endif
 
 // platform getters 
-int globox_platform_get_event_handle(struct globox* globox);
 uint32_t* globox_platform_get_argb(struct globox* globox);
 #if defined(GLOBOX_PLATFORM_WAYLAND)
+	int globox_platform_get_event_handle(struct globox* globox);
 	int globox_wayland_get_epoll(struct globox* globox);
 	struct epoll_event* globox_wayland_get_epoll_event(struct globox* globox);
 	uint32_t* globox_wayland_get_icon(struct globox* globox);
@@ -246,6 +247,7 @@ uint32_t* globox_platform_get_argb(struct globox* globox);
 		struct wl_egl_window* globox_egl_get_window(struct globox* globox);
 	#endif
 #elif defined(GLOBOX_PLATFORM_X11)
+	int globox_platform_get_event_handle(struct globox* globox);
 	xcb_connection_t* globox_x11_get_conn(struct globox* globox);
 	xcb_atom_t* globox_x11_get_atom_list(struct globox* globox);
 	xcb_window_t globox_x11_get_win(struct globox* globox);
@@ -271,7 +273,8 @@ uint32_t* globox_platform_get_argb(struct globox* globox);
 		GLXWindow globox_glx_get_win(struct globox* globox);
 	#endif
 #elif defined(GLOBOX_PLATFORM_WINDOWS)
-#elif defined(GLOBOX_PLATFORM_OSX)
+#elif defined(GLOBOX_PLATFORM_MACOS)
+	id globox_platform_get_event_handle(struct globox* globox);
 #endif
 
 // platform-independent context getters

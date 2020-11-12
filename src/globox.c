@@ -14,8 +14,8 @@
 	#include "x11/globox_x11.h"
 #elif defined(GLOBOX_PLATFORM_WINDOWS)
 	#include "windows/globox_windows.h"
-#elif defined(GLOBOX_PLATFORM_OSX)
-	#include "osx/globox_osx.h"
+#elif defined(GLOBOX_PLATFORM_MACOS)
+	#include "macos/globox_macos.h"
 #endif
 
 void globox_open(
