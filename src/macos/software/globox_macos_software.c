@@ -117,9 +117,21 @@ bool appdelegate_init_software(
 	};
 
 	// initialize the view object with the view frame
+	platform->globox_macos_obj_masterview =
+		macos_msg_id_rect(
+			platform->globox_macos_obj_masterview,
+			sel_getUid("initWithFrame:"),
+			frame);
+
 	platform->globox_macos_obj_view =
 		macos_msg_id_rect(
 			platform->globox_macos_obj_view,
+			sel_getUid("initWithFrame:"),
+			frame);
+
+	platform->globox_macos_obj_blur =
+		macos_msg_id_rect(
+			platform->globox_macos_obj_blur,
 			sel_getUid("initWithFrame:"),
 			frame);
 

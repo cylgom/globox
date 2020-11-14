@@ -40,12 +40,15 @@ struct globox_platform
 	struct globox_macos_glx globox_macos_glx;
 #endif
 
-        id globox_macos_obj_view;
+        Class globox_macos_class_appdelegate;
+        Class globox_macos_class_view;
+
         id globox_macos_obj_appdelegate;
         id globox_macos_obj_window;
 
-        Class globox_macos_class_view;
-        Class globox_macos_class_appdelegate;
+        id globox_macos_obj_masterview;
+        id globox_macos_obj_view;
+        id globox_macos_obj_blur;
 
 	// use an `int` instead of an `enum globox_state`
 	// because enums forward-declarations do not exist

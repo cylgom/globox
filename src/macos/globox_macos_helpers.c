@@ -32,6 +32,13 @@ void (*macos_msg_void_int)(
 (void (*)(id, SEL, int))
 	objc_msgSend;
 
+void (*macos_msg_void_bool)(
+	id,
+	SEL,
+	bool) =
+(void (*)(id, SEL, bool))
+	objc_msgSend;
+
 void (*macos_msg_void_idptr)(
 	id,
 	SEL,
@@ -46,11 +53,34 @@ void (*macos_msg_void_voidptr)(
 (void (*)(id, SEL, void*))
 	objc_msgSend;
 
+id (*macos_msg_id_size)(
+	id,
+	SEL,
+	struct macos_size) =
+(id (*)(id, SEL, struct macos_size))
+	objc_msgSend;
+
 id (*macos_msg_id_rect)(
 	id,
 	SEL,
 	struct macos_rect) =
 (id (*)(id, SEL, struct macos_rect))
+	objc_msgSend;
+
+void (*macos_msg_super_framesize)(
+	struct objc_super*,
+	SEL,
+	struct macos_size) =
+(void (*)(struct objc_super*, SEL, struct macos_size))
+	objc_msgSendSuper;
+
+id* (*macos_msg_subview)(
+	id,
+	SEL,
+	id,
+	int,
+	id) =
+(id*(*)(id, SEL, id, int, id))
 	objc_msgSend;
 
 id* (*macos_msg_event)(

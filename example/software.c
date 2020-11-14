@@ -34,7 +34,7 @@ void render(struct globox* globox)
 
 		for (uint32_t i = 0; i < height * width; ++i)
 		{
-			argb[i] = 0xEE000000;
+			argb[i] = 0x22000000;
 		}
 
 		uint32_t pos;

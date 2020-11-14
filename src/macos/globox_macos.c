@@ -136,6 +136,51 @@ void event_window_close(
 		0);
 }
 
+struct macos_size event_window_resize(
+	id windowdelegate,
+	SEL cmd,
+	id* window,
+	struct macos_size size)
+{
+	id nsapplication =
+		macos_msg_id_none(
+			(id) objc_getClass("NSApplication"),
+			sel_getUid("sharedApplication"));
+
+	id appdelegate =
+		macos_msg_id_none(
+			nsapplication,
+			sel_getUid("delegate"));
+
+	void* out;
+	
+	object_getInstanceVariable(
+		appdelegate,
+		"globox",
+		&out);
+
+	struct globox* globox = (struct globox*) out;
+	struct globox_platform* platform = &(globox->globox_platform);
+
+	macos_msg_id_size(
+		platform->globox_macos_obj_view,
+		sel_getUid("setFrameSize:"),
+		size);
+
+	macos_msg_id_size(
+		platform->globox_macos_obj_blur,
+		sel_getUid("setFrameSize:"),
+		size);
+
+	// TODO re-alloc CGContext
+
+	event_window_state(
+		GLOBOX_MACOS_EVENT_WINDOW_RESIZE,
+		0);
+
+	return size;
+}
+
 bool appdelegate_init_common(
 	struct macos_appdelegate* appdelegate,
 	SEL cmd,
@@ -231,6 +276,12 @@ bool appdelegate_init_common(
 		(IMP) event_window_close,
 		"v@:^@");
 
+	class_addMethod(
+		windowdelegateclass,
+		sel_getUid("windowWillResize:toSize:"),
+		(IMP) event_window_resize,
+		"v@:^@:@");
+
 	// instantiate the window delegate object
 	id windowdelegate =
 		macos_msg_id_none(
@@ -243,7 +294,17 @@ bool appdelegate_init_common(
 		sel_getUid("setDelegate:"),
 		windowdelegate);
 
-	// instantiate the view object
+	// instantiate the view objects
+	platform->globox_macos_obj_masterview =
+		macos_msg_id_none(
+			(id) objc_getClass("NSView"),
+			sel_getUid("alloc"));
+
+	platform->globox_macos_obj_blur =
+		macos_msg_id_none(
+			(id) objc_getClass("NSVisualEffectView"),
+			sel_getUid("alloc"));
+
 	platform->globox_macos_obj_view =
 		macos_msg_id_none(
 			(id) platform->globox_macos_class_view,
@@ -271,7 +332,7 @@ bool appdelegate_init_common(
 	macos_msg_void_voidptr(
 		appdelegate->window,
 		sel_getUid("setContentView:"),
-		platform->globox_macos_obj_view);
+		platform->globox_macos_obj_masterview);
 
 	macos_msg_void_none(
 		appdelegate->window,
@@ -294,6 +355,38 @@ bool appdelegate_init_common(
 	return true;
 }
 
+static void set_frame_size(
+	id view,
+	SEL cmd,
+	struct macos_size size)
+{
+	// call super method
+	struct objc_super super =
+	{
+		.receiver = view,
+		(Class) objc_getClass("NSView"),
+	};
+
+	macos_msg_super_framesize(
+		&super,
+		sel_getUid("setFrameSize:"),
+		size);
+
+	// ask for redraw in the given area
+	struct macos_rect frame =
+	{
+		.origin.x = 0,
+		.origin.y = 0,
+		.size.width = size.width,
+		.size.height = size.height,
+	};
+
+	macos_msg_id_rect(
+		view,
+		sel_getUid("setNeedsDisplayInRect:"),
+		frame);
+}
+
 static void make_class_view(struct globox* globox)
 {
 	// alias for readability
@@ -305,6 +398,13 @@ static void make_class_view(struct globox* globox)
 			(Class) objc_getClass("NSView"),
 			"View",
 			0);
+
+	// overload the setFrameSize method
+	class_addMethod(
+		platform->globox_macos_class_view,
+		sel_getUid("setFrameSize:"),
+		(IMP) set_frame_size,
+		"v@:@");
 
 	// inject the globox pointer
 	class_addIvar(
@@ -433,7 +533,7 @@ void globox_platform_init(
 	// alias for readability
 	char** log = globox->globox_log;
 
-	globox->globox_redraw = false;
+	globox->globox_redraw = true;
 	globox->globox_transparent = transparent;
 	globox->globox_frameless = frameless;
 	globox->globox_blurred = blurred;
@@ -447,19 +547,52 @@ void globox_platform_init(
 // create the window
 void globox_platform_create_window(struct globox* globox)
 {
+	// alias for readability
+	struct globox_platform* platform = &(globox->globox_platform);
+
 	// create the window
 	init_nsapplication(globox);
 	init_appdelegate(globox);
+
+	// configure the view for transparency
+	macos_msg_void_bool(
+		platform->globox_macos_obj_view,
+		sel_getUid("setOpaque:"),
+		false);
+
+	id color = macos_msg_id_none(
+		(id) objc_getClass("NSColor"),
+		sel_getUid("clearColor"));
+
+	macos_msg_void_id(
+		platform->globox_macos_obj_view,
+		sel_getUid("setBackgroundColor:"),
+		color);
 }
 
 void globox_platform_hooks(struct globox* globox)
 {
+	// alias for readability
+	struct globox_platform* platform = &(globox->globox_platform);
+
 	// platform update
 	globox_platform_set_title(globox, globox->globox_title);
 	globox_platform_set_state(globox, globox->globox_state);
 
 	link_appdelegate(globox);
 	wait_nsapplication(globox);
+
+	macos_msg_void_id(
+		platform->globox_macos_obj_masterview,
+		sel_getUid("addSubview:"),
+		platform->globox_macos_obj_view);
+
+	macos_msg_subview(
+		platform->globox_macos_obj_masterview,
+		sel_getUid("addSubview:positioned:relativeTo:"),
+		platform->globox_macos_obj_blur,
+		-1,
+		platform->globox_macos_obj_view);
 }
 
 void globox_platform_commit(struct globox* globox)
@@ -603,6 +736,11 @@ void globox_platform_events_handle(
 		case GLOBOX_MACOS_EVENT_WINDOW_CLOSE:
 		{
 			globox->globox_closed = true;
+			break;
+		}
+		case GLOBOX_MACOS_EVENT_WINDOW_RESIZE:
+		{
+			globox->globox_redraw = true;
 			break;
 		}
 		default:

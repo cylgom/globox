@@ -61,6 +61,7 @@ struct macos_appdelegate
 enum macos_events_subtype
 {
 	GLOBOX_MACOS_EVENT_WINDOW_STATE,
+	GLOBOX_MACOS_EVENT_WINDOW_RESIZE,
 	GLOBOX_MACOS_EVENT_WINDOW_CLOSE,
 };
 
@@ -93,6 +94,11 @@ void (*macos_msg_void_int)(
 	SEL,
 	int);
 
+void (*macos_msg_void_bool)(
+	id,
+	SEL,
+	bool);
+
 void (*macos_msg_void_idptr)(
 	id,
 	SEL,
@@ -103,10 +109,27 @@ void (*macos_msg_void_voidptr)(
 	SEL,
 	void*);
 
+id (*macos_msg_id_size)(
+	id,
+	SEL,
+	struct macos_size);
+
 id (*macos_msg_id_rect)(
 	id,
 	SEL,
 	struct macos_rect);
+
+void (*macos_msg_super_framesize)(
+	struct objc_super*,
+	SEL,
+	struct macos_size);
+
+id* (*macos_msg_subview)(
+	id,
+	SEL,
+	id,
+	int,
+	id);
 
 id* (*macos_msg_event)(
 	id,
