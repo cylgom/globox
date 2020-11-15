@@ -59,7 +59,7 @@ void event_window_state(short event_subtype, long event_value)
 		nsapplication,
 		sel_getUid("postEvent:atStart:"),
 		event,
-		true);
+		false);
 }
 
 // window state event callbacks
@@ -280,7 +280,7 @@ bool appdelegate_init_common(
 		windowdelegateclass,
 		sel_getUid("windowWillResize:toSize:"),
 		(IMP) event_window_resize,
-		"v@:^@:@");
+		"@:^@:@");
 
 	// instantiate the window delegate object
 	id windowdelegate =
