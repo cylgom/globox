@@ -80,9 +80,16 @@ void (*macos_msg_void_none)(id, SEL);
 id (*macos_msg_id_none)(id, SEL);
 bool (*macos_msg_bool_none)(id, SEL);
 id* (*macos_msg_idptr_none)(id, SEL);
+id* (*macos_msg_idptr_int)(id, SEL, int);
 unsigned long (*macos_msg_ulong_none)(id*, SEL);
 short (*macos_msg_short_none)(id*, SEL);
 long (*macos_msg_long_none)(id*, SEL);
+struct macos_point (*macos_msg_loc_none)(id*, SEL);
+
+void (*macos_msgptr_void_bool)(
+	id*,
+	SEL,
+	bool);
 
 void (*macos_msg_void_id)(
 	id,
@@ -172,6 +179,12 @@ id (*macos_msg_string_charptr_int)(
 	SEL,
 	char*,
 	int);
+
+void (*macos_msg_resize)(
+	id,
+	SEL,
+	struct macos_rect,
+	bool);
 
 // extern native functions
 extern void* CGBitmapContextGetData(id);

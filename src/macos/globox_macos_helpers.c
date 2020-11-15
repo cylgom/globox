@@ -11,12 +11,23 @@ bool (*macos_msg_bool_none)(id, SEL) =
 	(bool (*)(id, SEL)) objc_msgSend;
 id* (*macos_msg_idptr_none)(id, SEL) =
 	(id* (*)(id, SEL)) objc_msgSend;
+id* (*macos_msg_idptr_int)(id, SEL, int) =
+	(id* (*)(id, SEL, int)) objc_msgSend;
 unsigned long (*macos_msg_ulong_none)(id*, SEL) =
 	(unsigned long (*)(id*, SEL)) objc_msgSend;
 short (*macos_msg_short_none)(id*, SEL) =
 	(short (*)(id*, SEL)) objc_msgSend;
 long (*macos_msg_long_none)(id*, SEL) =
 	(long (*)(id*, SEL)) objc_msgSend;
+struct macos_point (*macos_msg_loc_none)(id*, SEL) =
+	(struct macos_point (*)(id*, SEL)) objc_msgSend;
+
+void (*macos_msgptr_void_bool)(
+	id*,
+	SEL,
+	bool) =
+(void (*)(id*, SEL, bool))
+	objc_msgSend;
 
 void (*macos_msg_void_id)(
 	id,
@@ -135,3 +146,10 @@ id (*macos_msg_string_charptr_int)(
 (id (*)(id, SEL, char*, int))
  	objc_msgSend;
 
+void (*macos_msg_resize)(
+	id,
+	SEL,
+	struct macos_rect,
+	bool) =
+(void (*)(id, SEL, struct macos_rect, bool))
+	objc_msgSend;

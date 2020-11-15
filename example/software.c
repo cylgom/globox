@@ -149,6 +149,8 @@ int main(void)
 
 	while (globox_get_closed(&globox) == false)
 	{
+		globox_platform_commit(&globox);
+
 		globox_platform_prepoll(&globox);
 
 		if (globox_error_catch(&globox))

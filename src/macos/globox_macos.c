@@ -201,8 +201,7 @@ bool appdelegate_init_common(
 	int states =
 		NSWindowStyleMaskTitled
 		| NSWindowStyleMaskClosable
-		| NSWindowStyleMaskMiniaturizable
-		| NSWindowStyleMaskResizable;
+		| NSWindowStyleMaskMiniaturizable;
 
 	struct macos_rect rect_win =
 	{
@@ -352,39 +351,23 @@ bool appdelegate_init_common(
 	// save a reference to the window instance
 	platform->globox_macos_obj_window = appdelegate->window;
 
+	macos_msg_void_bool(
+		platform->globox_macos_obj_window,
+		sel_getUid("setMovable:"),
+		false);
+
+	id* button =
+		macos_msg_idptr_int(
+			platform->globox_macos_obj_window,
+			sel_getUid("standardWindowButton:"),
+			2);
+
+	macos_msgptr_void_bool(
+		button,
+		sel_getUid("setEnabled:"),
+		true);
+
 	return true;
-}
-
-static void set_frame_size(
-	id view,
-	SEL cmd,
-	struct macos_size size)
-{
-	// call super method
-	struct objc_super super =
-	{
-		.receiver = view,
-		(Class) objc_getClass("NSView"),
-	};
-
-	macos_msg_super_framesize(
-		&super,
-		sel_getUid("setFrameSize:"),
-		size);
-
-	// ask for redraw in the given area
-	struct macos_rect frame =
-	{
-		.origin.x = 0,
-		.origin.y = 0,
-		.size.width = size.width,
-		.size.height = size.height,
-	};
-
-	macos_msg_id_rect(
-		view,
-		sel_getUid("setNeedsDisplayInRect:"),
-		frame);
 }
 
 static void make_class_view(struct globox* globox)
@@ -398,13 +381,6 @@ static void make_class_view(struct globox* globox)
 			(Class) objc_getClass("NSView"),
 			"View",
 			0);
-
-	// overload the setFrameSize method
-	class_addMethod(
-		platform->globox_macos_class_view,
-		sel_getUid("setFrameSize:"),
-		(IMP) set_frame_size,
-		"v@:@");
 
 	// inject the globox pointer
 	class_addIvar(
@@ -597,8 +573,47 @@ void globox_platform_hooks(struct globox* globox)
 
 void globox_platform_commit(struct globox* globox)
 {
+	static struct macos_rect rect =
+	{
+		.origin =
+		{
+			.x = 0,
+			.y = 0,
+		},
+		.size =
+		{
+			.width = 10,
+			.height = 10,
+		},
+	};
+
+	rect.size.width += 0.03;
+	rect.size.height += 0.03;
+	rect.origin.x += 0.01;
+	rect.origin.y += 0.01;
+
 	// alias for readability
 	struct globox_platform* platform = &(globox->globox_platform);
+
+	macos_msg_resize(
+		platform->globox_macos_obj_window,
+		sel_getUid("setFrame:display:"),
+		rect,
+		true);
+
+	macos_msg_id_size(
+		platform->globox_macos_obj_view,
+		sel_getUid("setFrameSize:"),
+		rect.size);
+
+	macos_msg_id_size(
+		platform->globox_macos_obj_blur,
+		sel_getUid("setFrameSize:"),
+		rect.size);
+
+	event_window_state(
+		GLOBOX_MACOS_EVENT_WINDOW_RESIZE,
+		0);
 
 	macos_msg_void_none(
 		platform->globox_macos_obj_view,

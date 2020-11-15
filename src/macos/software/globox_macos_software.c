@@ -59,6 +59,16 @@ void view_drawrect_software(
 
 	if ((context->globox_software_buffer_width * context->globox_software_buffer_height) < (width * height))
 	{
+		uint32_t width_bytes = context->globox_software_buffer_width * 4;
+
+		for (uint32_t i = 0; i < context->globox_software_buffer_height; ++i)
+		{
+			memcpy(
+				buffer + (i * width_bytes_padded),
+				((uint8_t*) platform->globox_platform_argb) + (i * width_bytes),
+				width_bytes);
+		}
+
 		// realloc the buffer if needed
 		free(platform->globox_platform_argb);
 		platform->globox_platform_argb = (uint32_t*) malloc(4 * width * height);
@@ -83,6 +93,17 @@ void view_drawrect_software(
 	}
 	else
 	{
+		uint32_t width_bytes = width * 4;
+
+		for (uint32_t i = 0; i < height; ++i)
+		{
+			memcpy(
+				buffer + (i * width_bytes_padded),
+				((uint8_t*) platform->globox_platform_argb)
+					+ (i * globox->globox_width * 4),
+				width_bytes);
+		}
+
 		// update the size if needed and wait for the next cycle
 		// until a properly sized image is rendered by the app
 		globox->globox_width = width;
