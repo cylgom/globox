@@ -8,6 +8,7 @@
 #include <stdbool.h>
 // include the macOS structures and functions
 #include "macos/globox_macos_helpers.h"
+#include <dispatch/dispatch.h>
 // include the graphic context structures and functions
 // this will also have the effect of exposing the graphic context functions
 #if defined(GLOBOX_CONTEXT_SOFTWARE)
@@ -42,13 +43,26 @@ struct globox_platform
 
         Class globox_macos_class_appdelegate;
         Class globox_macos_class_view;
+        Class globox_macos_class_cursor;
 
         id globox_macos_obj_appdelegate;
         id globox_macos_obj_window;
+        id globox_macos_obj_cursor_a;
+        id globox_macos_obj_cursor_b;
+        id* globox_macos_obj_cursor_old;
+
+	long globox_macos_cursor;
+	bool globox_macos_cursor_use_a;
+	unsigned long globox_macos_cursor_hover;
 
         id globox_macos_obj_masterview;
         id globox_macos_obj_view;
         id globox_macos_obj_blur;
+
+	int16_t globox_macos_interactive_x;
+	int16_t globox_macos_interactive_y;
+
+	dispatch_semaphore_t globox_macos_semaphore_draw;
 
 	// use an `int` instead of an `enum globox_state`
 	// because enums forward-declarations do not exist

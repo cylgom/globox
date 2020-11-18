@@ -15,12 +15,16 @@ id* (*macos_msg_idptr_int)(id, SEL, int) =
 	(id* (*)(id, SEL, int)) objc_msgSend;
 unsigned long (*macos_msg_ulong_none)(id*, SEL) =
 	(unsigned long (*)(id*, SEL)) objc_msgSend;
+struct macos_rect (*macos_msg_rect_none)(id, SEL) =
+	(struct macos_rect (*)(id, SEL)) objc_msgSend_stret;
 short (*macos_msg_short_none)(id*, SEL) =
 	(short (*)(id*, SEL)) objc_msgSend;
 long (*macos_msg_long_none)(id*, SEL) =
 	(long (*)(id*, SEL)) objc_msgSend;
 struct macos_point (*macos_msg_loc_none)(id*, SEL) =
 	(struct macos_point (*)(id*, SEL)) objc_msgSend;
+struct macos_point (*macos_msg_point_none)(id, SEL) =
+	(struct macos_point (*)(id, SEL)) objc_msgSend;
 
 void (*macos_msgptr_void_bool)(
 	id*,
@@ -43,6 +47,13 @@ void (*macos_msg_void_int)(
 (void (*)(id, SEL, int))
 	objc_msgSend;
 
+void (*macos_msg_void_ulong)(
+	id,
+	SEL,
+	unsigned long) =
+(void (*)(id, SEL, unsigned long))
+	objc_msgSend;
+
 void (*macos_msg_void_bool)(
 	id,
 	SEL,
@@ -62,6 +73,20 @@ void (*macos_msg_void_voidptr)(
 	SEL,
 	void*) =
 (void (*)(id, SEL, void*))
+	objc_msgSend;
+
+void (*macos_msg_void_size)(
+	id,
+	SEL,
+	struct macos_size) =
+(void (*)(id, SEL, struct macos_size))
+	objc_msgSend;
+
+void (*macos_msg_void_point)(
+	id,
+	SEL,
+	struct macos_point) =
+(void (*)(id, SEL, struct macos_point))
 	objc_msgSend;
 
 id (*macos_msg_id_size)(

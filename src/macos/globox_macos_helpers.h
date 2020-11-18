@@ -20,7 +20,17 @@ enum NSBackingStoreType
 
 enum NSEventType
 {
+	NSEventTypeLeftMouseDown = 1,
+	NSEventTypeLeftMouseUp = 2,
+	NSEventTypeMouseMoved = 5,
+	NSEventTypeLeftMouseDragged = 6,
 	NSEventTypeApplicationDefined = 15,
+};
+
+enum NSEventModifierFlags
+{
+	NSEventModifierFlagShift = 1 << 17,
+	NSEventModifierFlagOption = 1 << 19,
 };
 
 enum NSWindowStyleMask
@@ -30,6 +40,13 @@ enum NSWindowStyleMask
 	NSWindowStyleMaskMiniaturizable = 4,
 	NSWindowStyleMaskResizable = 8,
 	NSWindowStyleMaskFullScreen = 16384,
+};
+
+enum NSWindowCollectionBehavior
+{
+	NSWindowCollectionBehaviorParticipatesInCycle = 1 << 5,
+	NSWindowCollectionBehaviorFullScreenPrimary = 1 << 7,
+	NSWindowCollectionBehaviorFullScreenAllowsTiling = 1 << 11,
 };
 
 // missing native structs
@@ -82,9 +99,11 @@ bool (*macos_msg_bool_none)(id, SEL);
 id* (*macos_msg_idptr_none)(id, SEL);
 id* (*macos_msg_idptr_int)(id, SEL, int);
 unsigned long (*macos_msg_ulong_none)(id*, SEL);
+struct macos_rect (*macos_msg_rect_none)(id, SEL);
 short (*macos_msg_short_none)(id*, SEL);
 long (*macos_msg_long_none)(id*, SEL);
 struct macos_point (*macos_msg_loc_none)(id*, SEL);
+struct macos_point (*macos_msg_point_none)(id, SEL);
 
 void (*macos_msgptr_void_bool)(
 	id*,
@@ -101,6 +120,11 @@ void (*macos_msg_void_int)(
 	SEL,
 	int);
 
+void (*macos_msg_void_ulong)(
+	id,
+	SEL,
+	unsigned long);
+
 void (*macos_msg_void_bool)(
 	id,
 	SEL,
@@ -115,6 +139,16 @@ void (*macos_msg_void_voidptr)(
 	id,
 	SEL,
 	void*);
+
+void (*macos_msg_void_size)(
+	id,
+	SEL,
+	struct macos_size);
+
+void (*macos_msg_void_point)(
+	id,
+	SEL,
+	struct macos_point);
 
 id (*macos_msg_id_size)(
 	id,

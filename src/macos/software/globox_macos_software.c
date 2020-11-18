@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 // macos includes
 #include "macos/globox_macos_helpers.h"
 
@@ -27,6 +28,8 @@ void view_drawrect_software(
 	struct globox* globox = (struct globox*) out;
 	struct globox_platform* platform = &(globox->globox_platform);
 	struct globox_macos_software* context = &(platform->globox_macos_software);
+
+	dispatch_semaphore_wait(platform->globox_macos_semaphore_draw, DISPATCH_TIME_FOREVER);
 
 	// get contexts
 	id nsgraphicscontext =
@@ -54,14 +57,23 @@ void view_drawrect_software(
 	if (platform->globox_platform_argb == NULL)
 	{
 		// TODO error
+
+		dispatch_semaphore_signal(platform->globox_macos_semaphore_draw);
+
 		return;
 	}
 
 	if ((context->globox_software_buffer_width * context->globox_software_buffer_height) < (width * height))
 	{
+		// realloc the buffer if needed
+		free(platform->globox_platform_argb);
+		platform->globox_platform_argb = (uint32_t*) malloc(4 * width * height);
+
 		uint32_t width_bytes = context->globox_software_buffer_width * 4;
 
-		for (uint32_t i = 0; i < context->globox_software_buffer_height; ++i)
+		uint32_t min_h = height < context->globox_software_buffer_height ? height : context->globox_software_buffer_height;
+
+		for (uint32_t i = 0; i < min_h; ++i)
 		{
 			memcpy(
 				buffer + (i * width_bytes_padded),
@@ -69,9 +81,6 @@ void view_drawrect_software(
 				width_bytes);
 		}
 
-		// realloc the buffer if needed
-		free(platform->globox_platform_argb);
-		platform->globox_platform_argb = (uint32_t*) malloc(4 * width * height);
 		context->globox_software_buffer_width = width;
 		context->globox_software_buffer_height = height;
 		globox->globox_width = width;
@@ -93,9 +102,10 @@ void view_drawrect_software(
 	}
 	else
 	{
+		uint32_t min_h = height < globox->globox_height ? height : globox->globox_height;
 		uint32_t width_bytes = width * 4;
 
-		for (uint32_t i = 0; i < height; ++i)
+		for (uint32_t i = 0; i < min_h; ++i)
 		{
 			memcpy(
 				buffer + (i * width_bytes_padded),
@@ -110,6 +120,8 @@ void view_drawrect_software(
 		globox->globox_height = height;
 		globox->globox_redraw = true;
 	}
+
+	dispatch_semaphore_signal(platform->globox_macos_semaphore_draw);
 }
 
 bool appdelegate_init_software(
@@ -198,12 +210,14 @@ void globox_context_software_create(struct globox* globox)
 
 void globox_context_software_shrink(struct globox* globox)
 {
+#if 0
 	// alias for readability
 	struct globox_platform* platform = &(globox->globox_platform);
 	struct globox_macos_software* context = &(platform->globox_macos_software);
 
 	context->globox_software_buffer_width = globox->globox_width;
 	context->globox_software_buffer_height = globox->globox_height;
+#endif
 }
 
 void globox_context_software_free(struct globox* globox)
