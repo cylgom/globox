@@ -59,8 +59,13 @@ struct globox_platform
         id globox_macos_obj_view;
         id globox_macos_obj_blur;
 
+	struct macos_rect globox_macos_old_window_frame;
+
 	int16_t globox_macos_interactive_x;
 	int16_t globox_macos_interactive_y;
+	bool globox_macos_fullscreen;
+	bool globox_inhibit_resize;
+	struct macos_rect globox_macos_buttons[3];
 
 	dispatch_semaphore_t globox_macos_semaphore_draw;
 

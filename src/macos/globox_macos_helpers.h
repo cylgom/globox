@@ -18,12 +18,18 @@ enum NSBackingStoreType
 	NSBackingStoreBuffered = 2,
 };
 
+enum NSEventSubtype
+{
+	NSEventSubtypeApplicationActivated = 1,
+};
+
 enum NSEventType
 {
 	NSEventTypeLeftMouseDown = 1,
 	NSEventTypeLeftMouseUp = 2,
 	NSEventTypeMouseMoved = 5,
 	NSEventTypeLeftMouseDragged = 6,
+	NSEventTypeAppKitDefined = 13,
 	NSEventTypeApplicationDefined = 15,
 };
 

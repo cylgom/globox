@@ -116,9 +116,60 @@ void event_window_fullscreen_on(
 	SEL cmd,
 	id* notif)
 {
+#if 1
 	event_window_state(
 		GLOBOX_MACOS_EVENT_WINDOW_STATE,
 		GLOBOX_MACOS_EVENT_WINDOW_FULLSCREEN_ON);
+
+	id nsapplication =
+		macos_msg_id_none(
+			(id) objc_getClass("NSApplication"),
+			sel_getUid("sharedApplication"));
+
+	id appdelegate =
+		macos_msg_id_none(
+			nsapplication,
+			sel_getUid("delegate"));
+
+	void* out;
+	
+	object_getInstanceVariable(
+		appdelegate,
+		"globox",
+		&out);
+
+	struct globox* globox = (struct globox*) out;
+	struct globox_platform* platform = &(globox->globox_platform);
+
+	id screen =
+		macos_msg_id_none(
+			platform->globox_macos_obj_window,
+			sel_getUid("deepestScreen"));
+
+	platform->globox_macos_old_window_frame =
+		macos_msg_rect_none(
+			platform->globox_macos_obj_window,
+			sel_getUid("frame"));
+
+	platform->globox_macos_fullscreen = true;
+
+	struct macos_rect frame =
+		macos_msg_rect_none(
+			screen,
+			sel_getUid("frame"));
+
+	macos_msg_id_size(
+		platform->globox_macos_obj_view,
+		sel_getUid("setFrameSize:"),
+		frame.size);
+
+	macos_msg_id_size(
+		platform->globox_macos_obj_blur,
+		sel_getUid("setFrameSize:"),
+		frame.size);
+
+	globox->globox_interactive_mode = GLOBOX_INTERACTIVE_STOP;
+#endif
 }
 
 void event_window_fullscreen_off(
@@ -129,6 +180,48 @@ void event_window_fullscreen_off(
 	event_window_state(
 		GLOBOX_MACOS_EVENT_WINDOW_STATE,
 		GLOBOX_MACOS_EVENT_WINDOW_FULLSCREEN_OFF);
+
+	id nsapplication =
+		macos_msg_id_none(
+			(id) objc_getClass("NSApplication"),
+			sel_getUid("sharedApplication"));
+
+	id appdelegate =
+		macos_msg_id_none(
+			nsapplication,
+			sel_getUid("delegate"));
+
+	void* out;
+	
+	object_getInstanceVariable(
+		appdelegate,
+		"globox",
+		&out);
+
+	struct globox* globox = (struct globox*) out;
+	struct globox_platform* platform = &(globox->globox_platform);
+
+	macos_msg_resize(
+		platform->globox_macos_obj_window,
+		sel_getUid("setFrame:display:"),
+		platform->globox_macos_old_window_frame,
+		true);
+
+	platform->globox_macos_old_window_frame.size.height -=
+		RESIZE_REACH_TITLEBAR;
+
+	macos_msg_id_size(
+		platform->globox_macos_obj_view,
+		sel_getUid("setFrameSize:"),
+		platform->globox_macos_old_window_frame.size);
+
+	macos_msg_id_size(
+		platform->globox_macos_obj_blur,
+		sel_getUid("setFrameSize:"),
+		platform->globox_macos_old_window_frame.size);
+
+	globox->globox_interactive_mode = GLOBOX_INTERACTIVE_STOP;
+	platform->globox_macos_fullscreen = false;
 }
 
 struct macos_rect event_window_maximize_on(
@@ -170,6 +263,7 @@ struct macos_size event_window_resize(
 	id* window,
 	struct macos_size size)
 {
+#if 1
 	id nsapplication =
 		macos_msg_id_none(
 			(id) objc_getClass("NSApplication"),
@@ -199,6 +293,7 @@ struct macos_size event_window_resize(
 		platform->globox_macos_obj_blur,
 		sel_getUid("setFrameSize:"),
 		size);
+#endif
 
 	// TODO re-alloc CGContext
 
@@ -303,11 +398,13 @@ bool appdelegate_init_common(
 		(IMP) event_window_close,
 		"v@:^@");
 
+#if 1
 	class_addMethod(
 		windowdelegateclass,
-		sel_getUid("windowWillResize:toSize:"),
+		sel_getUid("window:willUseFullScreenContentSize:"),
 		(IMP) event_window_resize,
 		"@:^@:@");
+#endif
 
 	// instantiate the window delegate object
 	id windowdelegate =
@@ -407,6 +504,33 @@ bool appdelegate_init_common(
 			platform->globox_macos_obj_window,
 			sel_getUid("standardWindowButton:"),
 			2);
+
+	id* button_min =
+		macos_msg_idptr_int(
+			platform->globox_macos_obj_window,
+			sel_getUid("standardWindowButton:"),
+			1);
+
+	id* button_close =
+		macos_msg_idptr_int(
+			platform->globox_macos_obj_window,
+			sel_getUid("standardWindowButton:"),
+			0);
+
+	platform->globox_macos_buttons[2] =
+		macos_msg_rect_none(
+			(id) button,
+			sel_getUid("frame"));
+
+	platform->globox_macos_buttons[1] =
+		macos_msg_rect_none(
+			(id) button_min,
+			sel_getUid("frame"));
+
+	platform->globox_macos_buttons[0] =
+		macos_msg_rect_none(
+			(id) button_close,
+			sel_getUid("frame"));
 
 	macos_msgptr_void_bool(
 		button,
@@ -560,6 +684,8 @@ void globox_platform_init(
 	globox->globox_transparent = transparent;
 	globox->globox_frameless = frameless;
 	globox->globox_blurred = blurred;
+	platform->globox_macos_fullscreen = false;
+	platform->globox_inhibit_resize = false;
 
 	platform->globox_macos_semaphore_draw = dispatch_semaphore_create(1);
 	platform->globox_macos_cursor_hover = HOVER_NONE;
@@ -921,6 +1047,38 @@ static void hover_cursor(struct globox* globox, struct macos_point pos)
 			platform->globox_macos_obj_window,
 			sel_getUid("frame"));
 
+	// abort if in fullscreen
+	if (platform->globox_macos_fullscreen == true)
+	{
+		return;
+	}
+
+#if 1
+	// abort if on button
+	int i = 0;
+	struct macos_rect button_frame;
+
+	while (i < 3)
+	{
+		button_frame = platform->globox_macos_buttons[i];
+
+		if ((frame.size.height - RESIZE_REACH_TITLEBAR + button_frame.origin.y > pos.y)
+		|| (frame.size.height - RESIZE_REACH_TITLEBAR + button_frame.origin.y + button_frame.size.height < pos.y)
+		|| (button_frame.origin.x > pos.x)
+		|| (button_frame.origin.x + button_frame.size.width < pos.x))
+		{
+			++i;
+		}
+		else
+		{
+			platform->globox_inhibit_resize = true;
+			return;
+		}
+	}
+
+	platform->globox_inhibit_resize = false;
+#endif
+
 	enum system_cursor_hover old = 
 		platform->globox_macos_cursor_hover;
 
@@ -1069,7 +1227,26 @@ void globox_platform_events_handle(
 
 	if (event_type != NSEventTypeApplicationDefined)
 	{
-		if (event_type == NSEventTypeMouseMoved)
+		if (event_type == NSEventTypeAppKitDefined)
+		{
+			short event_subtype =
+				macos_msg_short_none(
+					event,
+					sel_getUid("subtype"));
+
+			if (event_subtype == NSEventSubtypeApplicationActivated)
+			{
+				// test the latest local coordinates directly from the window
+				struct macos_point pos =
+					macos_msg_point_none(
+						platform->globox_macos_obj_window,
+						sel_getUid("mouseLocationOutsideOfEventStream"));
+
+				hover_cursor(globox, pos);
+			}
+		}
+		else if ((event_type == NSEventTypeMouseMoved)
+		&& (globox->globox_interactive_mode == GLOBOX_INTERACTIVE_STOP))
 		{
 			// test the latest local coordinates directly from the window
 			struct macos_point pos =
@@ -1080,7 +1257,8 @@ void globox_platform_events_handle(
 			hover_cursor(globox, pos);
 		}
 		else if ((event_type == NSEventTypeLeftMouseDown)
-		&& (globox->globox_interactive_mode == GLOBOX_INTERACTIVE_STOP))
+		&& (globox->globox_interactive_mode == GLOBOX_INTERACTIVE_STOP)
+		&& (platform->globox_inhibit_resize == false))
 		{
 			// test the latest local coordinates directly from the window
 			struct macos_point pos =
