@@ -90,6 +90,18 @@ void event_window_state(short event_subtype, long event_value)
 		false);
 }
 
+unsigned long presentation(
+	id windowdelegate,
+	SEL cmd,
+	id* window,
+	unsigned long options)
+{
+	return NSApplicationPresentationHideDock
+		| NSApplicationPresentationHideMenuBar
+		| NSApplicationPresentationDisableAppleMenu
+		| NSApplicationPresentationFullScreen;
+}
+
 // window state event callbacks
 void event_window_minimize_on(
 	id windowdelegate,
@@ -405,6 +417,12 @@ bool appdelegate_init_common(
 		(IMP) event_window_resize,
 		"@:^@:@");
 #endif
+
+	class_addMethod(
+		windowdelegateclass,
+		sel_getUid("window:willUseFullScreenPresentationOptions:"),
+		(IMP) presentation,
+		"@:^@:@");
 
 	// instantiate the window delegate object
 	id windowdelegate =

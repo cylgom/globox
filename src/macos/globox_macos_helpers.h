@@ -33,6 +33,14 @@ enum NSEventType
 	NSEventTypeApplicationDefined = 15,
 };
 
+enum NSApplicationPresentationOptions
+{
+	NSApplicationPresentationHideDock = 2,
+	NSApplicationPresentationHideMenuBar = 8,
+	NSApplicationPresentationDisableAppleMenu = 16,
+	NSApplicationPresentationFullScreen = 1024,
+};
+
 enum NSEventModifierFlags
 {
 	NSEventModifierFlagShift = 1 << 17,
