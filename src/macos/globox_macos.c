@@ -334,9 +334,13 @@ bool appdelegate_init_common(
 
 	// configure the window
 	int states =
-		NSWindowStyleMaskTitled
-		| NSWindowStyleMaskClosable
+		NSWindowStyleMaskClosable
 		| NSWindowStyleMaskMiniaturizable;
+
+	if (globox->globox_frameless == false)
+	{
+		states |= NSWindowStyleMaskTitled;
+	}
 
 	struct macos_rect rect_win =
 	{
@@ -1077,8 +1081,9 @@ static void hover_cursor(struct globox* globox, struct macos_point pos)
 			platform->globox_macos_obj_window,
 			sel_getUid("frame"));
 
-	// abort if in fullscreen
-	if (platform->globox_macos_fullscreen == true)
+	// abort if in fullscreen or frameless
+	if ((platform->globox_macos_fullscreen == true)
+	|| (globox->globox_frameless == true))
 	{
 		return;
 	}
