@@ -1036,6 +1036,16 @@ static void handle_interactive_mode(struct globox* globox)
 
 	dispatch_semaphore_wait(platform->globox_macos_semaphore_draw, DISPATCH_TIME_FOREVER);
 
+	// TODO use callback
+#if 1
+	if ((globox->globox_width * globox->globox_height) < (size_view.width * size_view.height))
+	{
+		// realloc the buffer if needed
+		free(platform->globox_platform_argb);
+		platform->globox_platform_argb = (uint32_t*) malloc(4 * size_view.width * size_view.height);
+	}
+#endif
+
 	macos_msg_resize(
 		platform->globox_macos_obj_window,
 		sel_getUid("setFrame:display:"),
@@ -1051,6 +1061,8 @@ static void handle_interactive_mode(struct globox* globox)
 		platform->globox_macos_obj_view,
 		sel_getUid("setFrameSize:"),
 		size_view);
+
+	globox->globox_redraw = true;
 
 	dispatch_semaphore_signal(platform->globox_macos_semaphore_draw);
 }

@@ -210,6 +210,7 @@ void globox_context_software_create(struct globox* globox)
 
 void globox_context_software_shrink(struct globox* globox)
 {
+	// re-write
 #if 0
 	// alias for readability
 	struct globox_platform* platform = &(globox->globox_platform);
