@@ -38,7 +38,7 @@ SRCS_OBJS =
 
 # targets
 PLATFORM ?= MACOS
-CONTEXT ?= SOFTWARE
+CONTEXT ?= EGL
 
 ## X11
 ifeq ($(PLATFORM), X11)
@@ -126,7 +126,8 @@ ifeq ($(CONTEXT), EGL)
 FLAGS+= -DGLOBOX_CONTEXT_EGL
 SRCS+= example/egl.c
 SRCS+= $(SRCD)/macos/egl/globox_macos_egl.c
-LINK+= -lGL
+LINK+= -L$(RESD)/angle/libs
+LINK+= -lGLESv2
 LINK+= -lEGL
 endif
 endif
@@ -206,6 +207,11 @@ $(OBJD)/$(RESD)/icon/iconpix_mach.o: $(RESD)/icon/iconpix.bin $(RESD)/objconv/ob
 	$< $(OBJD)/$(RESD)/icon/iconpix.o
 	@./$(RESD)/objconv/objconv -fmac64 -nu+ -v0 $(OBJD)/$(RESD)/icon/iconpix.o $@
 
+## macOS ANGLE
+$(RESD)/angle/libs:
+	@echo "making ANGLE"
+	@cd ./$(RESD)/angle && ./makeangle.sh
+
 ## compilation
 $(OBJD)/%.o: %.c
 	@echo "building object $@"
@@ -217,7 +223,7 @@ $(BIND)/$(NAME): $(SRCS_OBJS)
 	@mkdir -p $(@D)
 	@$(CC) -o $@ $^ $(LINK)
 
-$(BIND)/$(NAME).app: $(BIND)/$(NAME)
+$(BIND)/$(NAME).app: $(RESD)/angle/libs $(BIND)/$(NAME)
 	@echo "renaming binary to $@"
 	@mv $^ $@
 
