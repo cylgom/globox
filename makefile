@@ -124,8 +124,9 @@ endif
 
 ifeq ($(CONTEXT), EGL)
 FLAGS+= -DGLOBOX_CONTEXT_EGL
-SRCS+= example/egl.c
+SRCS+= example/egl_gles2.c
 SRCS+= $(SRCD)/macos/egl/globox_macos_egl.c
+INCL+= -I$(RESD)/angle/include
 LINK+= -L$(RESD)/angle/libs
 LINK+= -lGLESv2
 LINK+= -lEGL
@@ -223,9 +224,16 @@ $(BIND)/$(NAME): $(SRCS_OBJS)
 	@mkdir -p $(@D)
 	@$(CC) -o $@ $^ $(LINK)
 
+ifeq ($(CONTEXT), EGL)
 $(BIND)/$(NAME).app: $(RESD)/angle/libs $(BIND)/$(NAME)
 	@echo "renaming binary to $@"
+	@cp $(RESD)/angle/libs/* $(BIND)/
+	@mv $(BIND)/$(NAME) $(BIND)/$(NAME).app
+else
+$(BIND)/$(NAME).app: $(BIND)/$(NAME)
+	@echo "renaming binary to $@"
 	@mv $^ $@
+endif
 
 # tools
 ## valgrind memory leak detection

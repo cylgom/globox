@@ -714,35 +714,10 @@ void globox_platform_init(
 	platform->globox_macos_obj_cursor_a = false;
 
 	log[GLOBOX_ERROR_MACOS_CONN] = "";
+	log[GLOBOX_ERROR_MACOS_EGL_FAIL] = "egl error";
 
 	make_class_view(globox);
 	make_class_appdelegate(globox);
-}
-
-// create the window
-void globox_platform_create_window(struct globox* globox)
-{
-	// alias for readability
-	struct globox_platform* platform = &(globox->globox_platform);
-
-	// create the window
-	init_nsapplication(globox);
-	init_appdelegate(globox);
-
-	// configure the view for transparency
-	macos_msg_void_bool(
-		platform->globox_macos_obj_view,
-		sel_getUid("setOpaque:"),
-		false);
-
-	id color = macos_msg_id_none(
-		(id) objc_getClass("NSColor"),
-		sel_getUid("clearColor"));
-
-	macos_msg_void_id(
-		platform->globox_macos_obj_view,
-		sel_getUid("setBackgroundColor:"),
-		color);
 }
 
 static long system_corecursortype(
@@ -772,10 +747,30 @@ static long system_corecursortype(
 	return platform->globox_macos_cursor;
 }
 
-void globox_platform_hooks(struct globox* globox)
+// create the window
+void globox_platform_create_window(struct globox* globox)
 {
 	// alias for readability
 	struct globox_platform* platform = &(globox->globox_platform);
+
+	// create the window
+	init_nsapplication(globox);
+	init_appdelegate(globox);
+
+	// configure the view for transparency
+	macos_msg_void_bool(
+		platform->globox_macos_obj_view,
+		sel_getUid("setOpaque:"),
+		false);
+
+	id color = macos_msg_id_none(
+		(id) objc_getClass("NSColor"),
+		sel_getUid("clearColor"));
+
+	macos_msg_void_id(
+		platform->globox_macos_obj_view,
+		sel_getUid("setBackgroundColor:"),
+		color);
 
 	// platform update
 	globox_platform_set_title(globox, globox->globox_title);
@@ -819,6 +814,10 @@ void globox_platform_hooks(struct globox* globox)
 		platform->globox_macos_obj_blur,
 		-1,
 		platform->globox_macos_obj_view);
+}
+
+void globox_platform_hooks(struct globox* globox)
+{
 }
 
 void globox_platform_commit(struct globox* globox)

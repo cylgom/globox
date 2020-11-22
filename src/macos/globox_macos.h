@@ -58,6 +58,7 @@ struct globox_platform
         id globox_macos_obj_masterview;
         id globox_macos_obj_view;
         id globox_macos_obj_blur;
+	id globox_macos_layer;
 
 	struct macos_rect globox_macos_old_window_frame;
 
@@ -119,6 +120,7 @@ enum globox_error
 
 	// platform errors
 	GLOBOX_ERROR_MACOS_CONN,
+	GLOBOX_ERROR_MACOS_EGL_FAIL,
 
 	// special value used to get the total number of error codes
 	GLOBOX_ERROR_SIZE,

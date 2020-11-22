@@ -36,3 +36,7 @@ gn args out/Release
 # build
 autoninja -C out/Release
 cp out/Release/libGLESv2.dylib out/Release/libEGL.dylib ../libs/
+cp -r include ../include
+
+# reset xcode trick
+sudo xcode-select -s /Library/Developer/CommandLineTools

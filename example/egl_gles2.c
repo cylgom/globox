@@ -1,4 +1,5 @@
 #include "globox.h"
+#include <GLES2/gl2.h>
 
 #if 0
 // we try to avoid ifdefs here by relying on helper files
@@ -16,6 +17,8 @@ extern unsigned char iconpix_beg;
 extern unsigned char iconpix_end;
 extern unsigned char iconpix_len;
 
+#define VERTEX_ATTR_POSITION 0
+
 void render(struct globox* globox)
 {
 	globox_platform_events_handle(
@@ -28,42 +31,60 @@ void render(struct globox* globox)
 
 	if (globox_get_redraw(globox) == true)
 	{
-		uint32_t width = globox_get_width(globox);
-		uint32_t height = globox_get_height(globox);
-		uint32_t* argb = globox_platform_get_argb(globox);
+		int32_t width = globox_get_width(globox);
+		int32_t height = globox_get_height(globox);
+		GLint viewport_rect[4];
 
-		for (uint32_t i = 0; i < height * width; ++i)
+		// we can make OpenGL 1 calls without any loader
+		glGetIntegerv(GL_VIEWPORT, viewport_rect);
+
+		if ((viewport_rect[2] != width) || (viewport_rect[3] != height))
 		{
-			argb[i] = 0x00000000;
+			glViewport(0, 0, width, height);
 		}
 
-		uint32_t pos;
+		glClearColor(0.2f, 0.4f, 0.9f, (0x08 / 255.0f));
+		glClear(GL_COLOR_BUFFER_BIT);
 
-		unsigned int square_width = 100;
-		unsigned int square_height = 100;
-
-		if (width < square_width)
+#if 0
+		glBegin(GL_TRIANGLE_FAN);
+		glColor3f(1.0f, 1.0f, 1.0f);
+		glVertex3f(-100.0f / width, +100.0f / height, 0.0f);
+		glVertex3f(-100.0f / width, -100.0f / height, 0.0f);
+		glVertex3f(+100.0f / width, -100.0f / height, 0.0f);
+		glVertex3f(+100.0f / width, +100.0f / height, 0.0f);
+		glEnd();
+#endif
+		GLfloat vertices[] =
 		{
-			square_width = width;
-		}
+			-100.0f / width, +100.0f / height,
+			-100.0f / width, -100.0f / height,
+			+100.0f / width, -100.0f / height,
+			+100.0f / width, +100.0f / height,
+		};
 
-		if (height < square_height)
-		{
-			square_height = height;
-		}
+		glBufferData(
+			GL_ARRAY_BUFFER,
+			8 * (sizeof (GLfloat)),
+			vertices,
+			GL_STATIC_DRAW);
 
-		for (uint32_t i = 0; i < (square_width * square_height); ++i)
-		{
-			pos =
-				((height - square_height) / 2
-				+ (i / square_width)) * width
-				+ (width - square_width) / 2
-				+ (i % square_width);
+#if 0
+		glVertexAttribPointer(
+			0, 
+			2,
+			GL_FLOAT,
+			GL_FALSE, 
+			2 * (sizeof (GLfloat)),
+			0);
+#endif
 
-			argb[pos] = 0xFFFFFFFF;
-		}
+		glDrawArrays(
+			GL_TRIANGLE_FAN,
+			0,
+			4);
 
-		globox_context_software_copy(
+		globox_context_egl_copy(
 			globox,
 			0,
 			0,
@@ -100,7 +121,8 @@ int main(void)
 		return 1;
 	}
 
-	globox_context_software_init(&globox, 0, 0);
+	// use GLES 2
+	globox_context_egl_init(&globox, 2, 0);
 
 	if (globox_error_catch(&globox))
 	{
@@ -118,11 +140,11 @@ int main(void)
 		return 1;
 	}
 
-	globox_context_software_create(&globox);
+	globox_context_egl_create(&globox);
 
 	if (globox_error_catch(&globox))
 	{
-		globox_context_software_free(&globox);
+		globox_context_egl_free(&globox);
 		globox_platform_free(&globox);
 		globox_close(&globox);
 		return 1;
@@ -132,7 +154,7 @@ int main(void)
 
 	if (globox_error_catch(&globox))
 	{
-		globox_context_software_free(&globox);
+		globox_context_egl_free(&globox);
 		globox_platform_free(&globox);
 		globox_close(&globox);
 		return 1;
@@ -143,19 +165,30 @@ int main(void)
 		(uint32_t*) &iconpix_beg,
 		2 + (16 * 16) + 2 + (32 * 32) + 2 + (64 * 64));
 
+	// prepare GLES OpenGL
+	GLuint vbo;
+	glGenBuffers(1, &vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+#if 0
+	GLuint vao;
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+	glEnableVertexAttribArray(VERTEX_ATTR_POSITION);
+#endif
+
+	// continue initializing globox
 	globox_platform_commit(&globox);
 
 	render(&globox);
 
 	while (globox_get_closed(&globox) == false)
 	{
-		globox_platform_commit(&globox);
-
 		globox_platform_prepoll(&globox);
 
 		if (globox_error_catch(&globox))
 		{
-			globox_context_software_free(&globox);
+			globox_context_egl_free(&globox);
 			globox_platform_free(&globox);
 			globox_close(&globox);
 			return 1;
@@ -165,7 +198,7 @@ int main(void)
 
 		if (globox_error_catch(&globox))
 		{
-			globox_context_software_free(&globox);
+			globox_context_egl_free(&globox);
 			globox_platform_free(&globox);
 			globox_close(&globox);
 			return 1;
@@ -175,14 +208,22 @@ int main(void)
 
 		if (globox_error_catch(&globox))
 		{
-			globox_context_software_free(&globox);
+			globox_context_egl_free(&globox);
 			globox_platform_free(&globox);
 			globox_close(&globox);
 			return 1;
 		}
 	}
 
-	globox_context_software_free(&globox);
+#if 0
+	glBindVertexArray(0);
+	glDeleteVertexArrays(1, &vao);
+#endif
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glDeleteBuffers(1, &vbo);
+
+	globox_context_egl_free(&globox);
 	globox_platform_free(&globox);
 	globox_close(&globox);
 
