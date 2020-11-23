@@ -211,7 +211,7 @@ $(OBJD)/$(RESD)/icon/iconpix_mach.o: $(RESD)/icon/iconpix.bin $(RESD)/objconv/ob
 ## macOS ANGLE
 $(RESD)/angle/libs:
 	@echo "making ANGLE"
-	@cd ./$(RESD)/angle && ./makeangle.sh
+	@cd ./$(RESD)/angle && ./getmetalangle.sh
 
 ## compilation
 $(OBJD)/%.o: %.c

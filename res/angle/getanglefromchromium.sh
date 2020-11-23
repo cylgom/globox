@@ -4,7 +4,7 @@ curl \
 -L "https://download-chromium.appspot.com/dl/Mac?type=snapshots" \
 -o ./chromium.zip
 
-mkdir ./libs
+mkdir -p ./libs
 unzip ./chromium.zip
 
 cp \
