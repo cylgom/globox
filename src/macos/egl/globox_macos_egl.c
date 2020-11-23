@@ -147,8 +147,6 @@ void globox_context_egl_init(
 
 	EGLint egl_context_attrib[] =
 	{
-		EGL_CONTEXT_MAJOR_VERSION, version_major,
-		EGL_CONTEXT_MINOR_VERSION, version_minor,
 		EGL_NONE,
 	};
 
@@ -346,6 +344,14 @@ void globox_context_egl_copy(
 	macos_msg_void_none(
 		platform->globox_macos_layer,
 		sel_getUid("setNeedsDisplay"));
+
+	struct macos_rect frame =
+		macos_msg_rect_none(
+			platform->globox_macos_obj_window,
+			sel_getUid("frame"));
+
+	globox->globox_width = frame.size.width;
+	globox->globox_height = frame.size.height -22;
 
 	globox_platform_commit(globox);
 }

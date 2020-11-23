@@ -43,41 +43,26 @@ void render(struct globox* globox)
 			glViewport(0, 0, width, height);
 		}
 
-		glClearColor(0.2f, 0.4f, 0.9f, (0x08 / 255.0f));
+		glClearColor(0.2f, 0.4f, 0.9f, (0x22 / 255.0f));
 		glClear(GL_COLOR_BUFFER_BIT);
 
-#if 0
-		glBegin(GL_TRIANGLE_FAN);
-		glColor3f(1.0f, 1.0f, 1.0f);
-		glVertex3f(-100.0f / width, +100.0f / height, 0.0f);
-		glVertex3f(-100.0f / width, -100.0f / height, 0.0f);
-		glVertex3f(+100.0f / width, -100.0f / height, 0.0f);
-		glVertex3f(+100.0f / width, +100.0f / height, 0.0f);
-		glEnd();
-#endif
 		GLfloat vertices[] =
 		{
-			-100.0f / width, +100.0f / height,
-			-100.0f / width, -100.0f / height,
-			+100.0f / width, -100.0f / height,
-			+100.0f / width, +100.0f / height,
+			-100.0f / width, +100.0f / height, 1.0f,
+			-100.0f / width, -100.0f / height, 1.0f,
+			+100.0f / width, -100.0f / height, 1.0f,
+			+100.0f / width, +100.0f / height, 1.0f,
 		};
 
-		glBufferData(
-			GL_ARRAY_BUFFER,
-			8 * (sizeof (GLfloat)),
-			vertices,
-			GL_STATIC_DRAW);
+		glEnableVertexAttribArray(VERTEX_ATTR_POSITION);
 
-#if 0
 		glVertexAttribPointer(
-			0, 
-			2,
+			0,
+			3,
 			GL_FLOAT,
-			GL_FALSE, 
-			2 * (sizeof (GLfloat)),
-			0);
-#endif
+			GL_FALSE,
+			0,
+			vertices);
 
 		glDrawArrays(
 			GL_TRIANGLE_FAN,
@@ -121,7 +106,7 @@ int main(void)
 		return 1;
 	}
 
-	// use GLES 2
+	// use OpenGL 2 or glES 2
 	globox_context_egl_init(&globox, 2, 0);
 
 	if (globox_error_catch(&globox))
@@ -165,17 +150,36 @@ int main(void)
 		(uint32_t*) &iconpix_beg,
 		2 + (16 * 16) + 2 + (32 * 32) + 2 + (64 * 64));
 
-	// prepare GLES OpenGL
-	GLuint vbo;
-	glGenBuffers(1, &vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	// prepare OpenGL or glES
+	const char* vertex_shader_src =
+		"attribute vec4 vPosition;"
+		"void main()"
+		"{"
+		"	gl_Position = vPosition;"
+		"}";
 
-#if 0
-	GLuint vao;
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-	glEnableVertexAttribArray(VERTEX_ATTR_POSITION);
-#endif
+	const char* fragment_shader_src =
+		"precision mediump float;"
+		"void main()"
+		"{"
+		"	gl_FragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);"
+		"}";
+
+	GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(vertex_shader, 1, &vertex_shader_src, 0);
+	glCompileShader(vertex_shader);
+
+	GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(fragment_shader, 1, &fragment_shader_src, 0);
+	glCompileShader(fragment_shader);
+
+	GLuint program = glCreateProgram();
+	glAttachShader(program, vertex_shader);
+	glAttachShader(program, fragment_shader);
+	glDeleteShader(vertex_shader);
+	glDeleteShader(fragment_shader);
+	glLinkProgram(program);
+	glUseProgram(program);
 
 	// continue initializing globox
 	globox_platform_commit(&globox);
@@ -214,14 +218,6 @@ int main(void)
 			return 1;
 		}
 	}
-
-#if 0
-	glBindVertexArray(0);
-	glDeleteVertexArrays(1, &vao);
-#endif
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glDeleteBuffers(1, &vbo);
 
 	globox_context_egl_free(&globox);
 	globox_platform_free(&globox);
