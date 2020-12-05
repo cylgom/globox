@@ -38,7 +38,7 @@ SRCS_OBJS =
 
 # targets
 PLATFORM ?= MACOS
-CONTEXT ?= EGL
+CONTEXT ?= SOFTWARE
 
 ## X11
 ifeq ($(PLATFORM), X11)

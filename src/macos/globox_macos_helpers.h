@@ -241,9 +241,21 @@ extern size_t CGBitmapContextGetHeight(id);
 extern size_t CGBitmapContextGetBytesPerRow(id);
 extern size_t CGBitmapContextGetBitsPerComponent(id);
 extern size_t CGBitmapContextGetBitsPerPixel(id);
+extern id CGLayerGetContext(id);
 
 extern void NSRectFill(struct macos_rect rect);
 extern SEL NSSelectorFromString(const char*);
 extern id* NSDefaultRunLoopMode;
+
+extern id CGBitmapContextCreateImage(id);
+extern id CGColorSpaceCreateDeviceRGB();
+extern id CGBitmapContextCreate(
+	void*,
+	size_t,
+	size_t,
+	size_t,
+	size_t,
+	id,
+	uint32_t);
 
 #endif

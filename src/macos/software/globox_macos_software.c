@@ -12,118 +12,6 @@
 // macos includes
 #include "macos/globox_macos_helpers.h"
 
-void view_drawrect_software(
-	id view,
-	SEL cmd,
-	struct macos_rect rect)
-{
-	// get the globox context
-	void* out;
-
-	object_getInstanceVariable(
-		(id) view,
-		"globox",
-		&out);
-
-	struct globox* globox = (struct globox*) out;
-	struct globox_platform* platform = &(globox->globox_platform);
-	struct globox_macos_software* context = &(platform->globox_macos_software);
-
-	dispatch_semaphore_wait(platform->globox_macos_semaphore_draw, DISPATCH_TIME_FOREVER);
-
-	// get contexts
-	id nsgraphicscontext =
-		macos_msg_id_none(
-			(id) objc_getClass("NSGraphicsContext"),
-			sel_getUid("currentContext"));
-
-	id cgcontext =
-		macos_msg_id_none(
-			nsgraphicscontext,
-			sel_getUid("CGContext"));
-
-	// get the memory address of the raw window buffer
-	// this will fail if the context used is not a bitmap!
-	// in theory, the pointer obtained is only valid in drawRect
-	// in practice, it should remain valid when used in the main thread
-	// we strive to respect Apple's rules however, mainly to help robustness
-	uint8_t* buffer = (uint8_t*) CGBitmapContextGetData(cgcontext);
-
-	// get the remaining information about the window buffer
-	uint32_t width = CGBitmapContextGetWidth(cgcontext);
-	uint32_t height = CGBitmapContextGetHeight(cgcontext);
-	uint32_t width_bytes_padded = CGBitmapContextGetBytesPerRow(cgcontext);
-
-	if (platform->globox_platform_argb == NULL)
-	{
-		// TODO error
-
-		dispatch_semaphore_signal(platform->globox_macos_semaphore_draw);
-
-		return;
-	}
-
-	if ((context->globox_software_buffer_width * context->globox_software_buffer_height) < (width * height))
-	{
-		// realloc the buffer if needed
-		free(platform->globox_platform_argb);
-		platform->globox_platform_argb = (uint32_t*) malloc(4 * width * height);
-
-		uint32_t width_bytes = context->globox_software_buffer_width * 4;
-
-		uint32_t min_h = height < context->globox_software_buffer_height ? height : context->globox_software_buffer_height;
-
-		for (uint32_t i = 0; i < min_h; ++i)
-		{
-			memcpy(
-				buffer + (i * width_bytes_padded),
-				((uint8_t*) platform->globox_platform_argb) + (i * width_bytes),
-				width_bytes);
-		}
-
-		context->globox_software_buffer_width = width;
-		context->globox_software_buffer_height = height;
-		globox->globox_width = width;
-		globox->globox_height = height;
-		globox->globox_redraw = true;
-	}
-	else if ((globox->globox_width == width) && (globox->globox_height == height))
-	{
-		// copy the buffer if the size matches
-		uint32_t width_bytes = width * 4;
-
-		for (uint32_t i = 0; i < height; ++i)
-		{
-			memcpy(
-				buffer + (i * width_bytes_padded),
-				((uint8_t*) platform->globox_platform_argb) + (i * width_bytes),
-				width_bytes);
-		}
-	}
-	else
-	{
-		uint32_t min_h = height < globox->globox_height ? height : globox->globox_height;
-		uint32_t width_bytes = width * 4;
-
-		for (uint32_t i = 0; i < min_h; ++i)
-		{
-			memcpy(
-				buffer + (i * width_bytes_padded),
-				((uint8_t*) platform->globox_platform_argb)
-					+ (i * globox->globox_width * 4),
-				width_bytes);
-		}
-
-		// update the size if needed and wait for the next cycle
-		// until a properly sized image is rendered by the app
-		globox->globox_width = width;
-		globox->globox_height = height;
-		globox->globox_redraw = true;
-	}
-
-	dispatch_semaphore_signal(platform->globox_macos_semaphore_draw);
-}
-
 bool appdelegate_init_software(
 	struct macos_appdelegate* appdelegate,
 	SEL cmd,
@@ -162,6 +50,16 @@ bool appdelegate_init_software(
 			sel_getUid("initWithFrame:"),
 			frame);
 
+	macos_msg_void_bool(
+		platform->globox_macos_obj_view,
+		sel_getUid("setWantsLayer:"),
+		true);
+
+	platform->globox_macos_layer =
+		macos_msg_id_none(
+			platform->globox_macos_obj_view,
+			sel_getUid("layer"));
+
 	platform->globox_macos_obj_blur =
 		macos_msg_id_rect(
 			platform->globox_macos_obj_blur,
@@ -183,12 +81,14 @@ void globox_context_software_init(
 	context->globox_software_buffer_width = globox->globox_width;
 	context->globox_software_buffer_height = globox->globox_height;
 
+#if 0
 	// inject the drawRect callback
 	class_addMethod(
 		platform->globox_macos_class_view,
 		sel_getUid("drawRect:"),
 		(IMP) view_drawrect_software,
 		"v@:");
+#endif
 
 	// add the AppDelegate backend callback
 	platform->globox_macos_appdelegate_callback = appdelegate_init_software;
@@ -233,7 +133,53 @@ void globox_context_software_copy(
 	uint32_t width,
 	uint32_t height)
 {
+	struct globox_platform* platform = &(globox->globox_platform);
+	struct globox_macos_software* context = &(platform->globox_macos_software);
+
 	globox->globox_redraw = false;
+
+	id colorspace =
+		CGColorSpaceCreateDeviceRGB();
+
+	id bitmap =
+		CGBitmapContextCreate(
+			platform->globox_platform_argb,
+			context->globox_software_buffer_width,
+			context->globox_software_buffer_height,
+			8,
+			context->globox_software_buffer_width * 4,
+			colorspace,
+			(4 << 12) | (1));
+
+	id image =
+		CGBitmapContextCreateImage(bitmap);
+
+	macos_msg_void_id(
+		platform->globox_macos_layer,
+		sel_getUid("setContents:"),
+		image);
+
+	struct macos_rect frame =
+		macos_msg_rect_none(
+			platform->globox_macos_obj_view,
+			sel_getUid("frame"));
+
+	if ((frame.size.width
+			* frame.size.height)
+		> (context->globox_software_buffer_width
+			* context->globox_software_buffer_height))
+	{
+		free(platform->globox_platform_argb);
+		platform->globox_platform_argb =
+			(uint32_t*) malloc(
+				4 * frame.size.width * frame.size.height);
+		globox->globox_redraw = true;
+	}
+
+	context->globox_software_buffer_width = frame.size.width;
+	context->globox_software_buffer_height = frame.size.height;
+	globox->globox_width = frame.size.width;
+	globox->globox_height = frame.size.height;
 
 	globox_platform_commit(globox);
 }

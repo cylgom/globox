@@ -825,13 +825,10 @@ void globox_platform_commit(struct globox* globox)
 	// alias for readability
 	struct globox_platform* platform = &(globox->globox_platform);
 
-	event_window_state(
-		GLOBOX_MACOS_EVENT_WINDOW_RESIZE,
-		0);
-
-	macos_msg_void_none(
+	macos_msg_void_bool(
 		platform->globox_macos_obj_view,
-		sel_getUid("setNeedsDisplay:"));
+		sel_getUid("setNeedsDisplay:"),
+		true);
 }
 
 void globox_platform_prepoll(struct globox* globox)
