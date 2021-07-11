@@ -4,6 +4,7 @@
 #include "globox.h"
 #include <stdint.h>
 
+void globox_egl_callback_wait_copy(struct globox* globox);
 void globox_egl_callback_allocate(struct globox* globox);
 void globox_egl_callback_unminimize_start(struct globox* globox);
 void globox_egl_callback_unminimize_finish(struct globox* globox);

@@ -3,6 +3,7 @@
 #include "globox.h"
 #include "globox_error.h"
 
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -28,6 +29,12 @@ void globox_context_software_init(
 		* globox->globox_width
 		* globox->globox_height;
 
+	// copy mutex
+	pthread_mutex_init(&(context->globox_software_copy_mutex), NULL);
+
+	context->globox_software_buffer_listener.release =
+		globox_software_callback_buffer_release;
+
 	// set callbacks function pointers
 	platform->globox_wayland_unminimize_start =
 		globox_software_callback_unminimize_start;
@@ -37,6 +44,8 @@ void globox_context_software_init(
 		globox_software_callback_resize;
 	platform->globox_wayland_callback_xdg_surface_configure =
 		globox_software_callback_attach;
+	platform->globox_wayland_callback_wait_copy =
+		globox_software_callback_wait_copy;
 
 	return;
 }

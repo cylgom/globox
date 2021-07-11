@@ -7,16 +7,16 @@ extern unsigned char iconpix_len;
 
 void render(struct globox* globox)
 {
-	globox_platform_events_handle(
-		globox);
-
-	if (globox_error_catch(globox))
-	{
-		return;
-	}
-
 	if (globox_get_redraw(globox) == true)
 	{
+		globox_platform_events_handle(
+			globox);
+
+		if (globox_error_catch(globox))
+		{
+			return;
+		}
+
 		uint32_t width = globox_get_width(globox);
 		uint32_t height = globox_get_height(globox);
 		uint32_t* argb = globox_platform_get_argb(globox);

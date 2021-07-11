@@ -62,6 +62,8 @@ struct globox_platform
 		struct globox* globox,
 		int32_t width,
 		int32_t height);
+	void (*globox_wayland_callback_wait_copy)(
+		struct globox* globox);
 
 	struct wl_display* globox_wayland_display;
 	struct wl_registry* globox_wayland_registry;

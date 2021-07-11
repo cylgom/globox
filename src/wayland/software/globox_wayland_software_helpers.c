@@ -3,6 +3,8 @@
 #include "globox.h"
 #include "globox_error.h"
 
+#include <stdio.h>
+#include <pthread.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdint.h>
@@ -29,6 +31,23 @@ static inline uint64_t nextpow2(uint64_t x)
 	++x;
 
 	return x;
+}
+
+void globox_software_callback_wait_copy(struct globox* globox)
+{
+	struct globox_platform* platform = globox->globox_platform;
+	struct globox_wayland_software* context = &(platform->globox_wayland_software);
+
+	pthread_mutex_lock(&(context->globox_software_copy_mutex));
+}
+
+void globox_software_callback_buffer_release(void* data, struct wl_buffer* wl_buffer)
+{
+	struct globox* globox = data;
+	struct globox_platform* platform = globox->globox_platform;
+	struct globox_wayland_software* context = &(platform->globox_wayland_software);
+
+	pthread_mutex_unlock(&(context->globox_software_copy_mutex));
 }
 
 void globox_software_callback_allocate(struct globox* globox)
@@ -163,6 +182,19 @@ void globox_software_callback_allocate(struct globox* globox)
 		return;
 	}
 
+	ret = wl_buffer_add_listener(
+		context->globox_software_buffer,
+		&(context->globox_software_buffer_listener),
+		globox);
+
+	if (ret == -1)
+	{
+		globox_error_throw(
+			globox,
+			GLOBOX_ERROR_WAYLAND_LISTENER);
+		return;
+	}
+
 	context->globox_software_fd = fd;
 }
 
@@ -226,7 +258,8 @@ void globox_software_callback_resize(
 
 	bool alloc;
 
-#ifdef GLOBOX_KDE_WAYLAND_RESIZE_FIX
+#if 0
+	//#ifdef GLOBOX_KDE_WAYLAND_RESIZE_FIX
 	alloc = true;
 #else
 	uint32_t size = 4 * ((uint64_t) width) * ((uint64_t) height);
@@ -276,6 +309,19 @@ void globox_software_callback_resize(
 			globox_error_throw(
 				globox,
 				GLOBOX_ERROR_WAYLAND_REQUEST);
+			return;
+		}
+
+		int ret = wl_buffer_add_listener(
+			context->globox_software_buffer,
+			&(context->globox_software_buffer_listener),
+			globox);
+
+		if (ret == -1)
+		{
+			globox_error_throw(
+				globox,
+				GLOBOX_ERROR_WAYLAND_LISTENER);
 			return;
 		}
 	}

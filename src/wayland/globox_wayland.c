@@ -566,7 +566,23 @@ void globox_platform_interactive_mode(struct globox* globox, enum globox_interac
 void globox_platform_events_handle(
 	struct globox* globox)
 {
-	// not needed
+	struct globox_platform* platform = globox->globox_platform;
+
+#if 0
+	int error =
+		wl_display_dispatch(
+			platform->globox_wayland_display);
+
+	if (error == -1)
+	{
+		globox_error_throw(
+			globox,
+			GLOBOX_ERROR_WAYLAND_DISPATCH);
+		return;
+	}
+#endif
+
+	platform->globox_wayland_callback_wait_copy(globox);
 }
 
 void globox_platform_free(struct globox* globox)

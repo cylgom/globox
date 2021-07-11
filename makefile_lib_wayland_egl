@@ -8,6 +8,7 @@ LDLIBS+= -lwayland-client
 LDLIBS+= -lEGL
 LDLIBS+= -lGLESv2
 LDLIBS+= -lrt
+LDLIBS+= -lpthread
 
 CFLAGS+= -std=c99
 CFLAGS+= -pedantic

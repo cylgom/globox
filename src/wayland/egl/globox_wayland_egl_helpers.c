@@ -18,6 +18,11 @@
 #include "wayland/egl/globox_wayland_egl.h"
 #include "wayland/egl/globox_wayland_egl_helpers.h"
 
+void globox_egl_callback_wait_copy(struct globox* globox)
+{
+	// not needed
+}
+
 void globox_egl_callback_allocate(struct globox* globox)
 {
 	// not needed

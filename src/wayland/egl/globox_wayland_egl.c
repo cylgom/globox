@@ -34,6 +34,8 @@ void globox_context_egl_init(
 		globox_egl_callback_resize;
 	platform->globox_wayland_callback_xdg_surface_configure =
 		globox_egl_callback_attach;
+	platform->globox_wayland_callback_wait_copy =
+		globox_egl_callback_wait_copy;
 
 	// egl
 	context->globox_egl_display = EGL_NO_DISPLAY;

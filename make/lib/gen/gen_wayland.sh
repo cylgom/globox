@@ -38,6 +38,7 @@ defines+=("-DGLOBOX_PLATFORM_WAYLAND")
 # generated linker arguments
 link+=("wayland-client")
 ldlibs+=("-lrt")
+ldlibs+=("-lpthread")
 
 # build type
 read -p "select build type ([1] debug | [2] release): " build
